@@ -1,4 +1,4 @@
-from datasets import load_dataset, concatenate_datasets
+from datasets import load_dataset, concatenate_datasets, DatasetDict
 import argparse
 from huggingface_hub import login
 
@@ -8,7 +8,7 @@ from src.env_secrets import HF_TOKEN
 def join_datasets(config):
     datasets = config["datasets"]
 
-    datasets_to_combine = []
+    datasets_to_combine = {}
     for dataset_info in datasets:
         print(f"Loading dataset: {dataset_info['name']}")
 
@@ -31,16 +31,16 @@ def join_datasets(config):
         if "columns_to_keep" in dataset_info:
             dataset = dataset.select_columns(dataset_info["columns_to_keep"])
 
-        datasets_to_combine.append(dataset)
+        datasets_to_combine[dataset_info["subset_name"]] = dataset
 
     # Combine all datasets
-    combined_dataset = concatenate_datasets(datasets_to_combine)
+    # combined_dataset = concatenate_datasets(DatasetDict(datasets_to_combine))
 
     # Shuffle if specified
-    if config.get("shuffle", False):
-        combined_dataset = combined_dataset.shuffle(seed=config.get("seed", 42))
+    # if config.get("shuffle", False):
+    #     combined_dataset = combined_dataset.shuffle(seed=config.get("seed", 42))
 
-    return combined_dataset
+    return DatasetDict(datasets_to_combine)
 
 
 if __name__ == "__main__":

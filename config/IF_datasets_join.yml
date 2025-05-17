@@ -4,21 +4,26 @@ hub_dataset_name: "andresnowak/Instruction-finetuning-mnlp"
 
 datasets:
   - name: allenai/tulu-3-sft-personas-instruction-following
+    subset_name: InstructionFollowing
     type: instruct
     config: default 
     split: train
     source: hf
+    columns_to_keep: ["id", "prompt", "messages"]
   - name: allenai/tulu-3-sft-personas-math
+    subset_name: math
     type: instruct
     config: default
     split: train
     source: hf
   - name: allenai/tulu-3-sft-personas-math-grade
+    subset_name: mathGrade
     type: instruct
     config: default
     split: train
     source: hf
   - name: allenai/tulu-3-sft-personas-code
+    subset_name: code
     type: instruct
     split: train
     config: default

@@ -1,0 +1,35 @@
+defaults:
+  - override hydra/job_logging: disabled
+
+model:
+  name: Qwen/Qwen3-0.6B-Base
+
+dataset:
+  - name: andresnowak/Instruction-finetuning-mnlp
+    config: default
+    samples: 2000  # Reduced for sweeps
+  - name: cais/mmlu
+    config: default
+    samples: 2000
+
+training:
+  output_dir: ./output
+  logging_dir: ./logs
+  report_to: wandb
+  learning_rate: 5e-5  # Default value
+  per_device_train_batch_size: 8
+  per_device_eval_batch_size: 8
+  num_train_epochs: 2
+  weight_decay: 0.00
+
+wandb:
+  project: MNLP-qwen-instruction-finetuning
+  name: qwen-instruction-finetuning
+
+
+# from datasets import interleave_datasets
+
+# mixture = interleave_datasets(
+#     [ds1, ds2, ds3],
+#     probabilities=[1.0, 1.0, 1.0]
+# )

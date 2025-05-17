@@ -3,3 +3,4 @@ Understanding-LLM-Internals
 env_secrets.py
 *.DS_store
 *__pycache__
+outputs

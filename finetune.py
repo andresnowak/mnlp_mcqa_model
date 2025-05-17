@@ -68,11 +68,11 @@ def train(cfg: DictConfig):
             return_tensors="pt",
         )
 
-    tokenized_datasets = raw_train_datasets.map(
-        tokenize_function,
-        batched=True,
-        remove_columns=raw_train_datasets["train"].column_names,
-    )
+    # tokenized_datasets = raw_train_datasets.map(
+    #     tokenize_function,
+    #     batched=True,
+    #     remove_columns=raw_train_datasets["train"].column_names,
+    # )
 
     # Model
     model = AutoModelForCausalLM.from_pretrained(
@@ -100,8 +100,8 @@ def train(cfg: DictConfig):
     trainer = SFTTrainer(
         model=model,
         args=training_args,
-        train_dataset=tokenized_datasets["train"],
-        eval_dataset=tokenized_datasets["test"],
+        train_dataset=raw_train_datasets["train"],
+        # eval_dataset=tokenized_datasets["test"],
         data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
     )
 

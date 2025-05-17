@@ -1,0 +1,17 @@
+model_name: qwen3-0.6-reasoning
+datasets:
+  - name: allenai/tulu-3-sft-personas-instruction-following
+    type: instruct
+    config: default 
+    source: hf
+output_dir: ./output
+logging_dir: ./logs
+learning_rate: 5e-6
+per_device_train_batch_size: 4
+per_device_eval_batch_size: 4
+num_train_epochs: 2
+weight_decay: 0.01 # should we use weight decay?
+report_to: wandb
+wandb:
+  project: MNLP-qwen-reasoning
+  name: qwen-reasoning

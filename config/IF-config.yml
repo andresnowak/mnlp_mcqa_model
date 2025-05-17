@@ -1,0 +1,40 @@
+defaults:
+  - override hydra/job_logging: disabled
+
+model_name: qwen3-0.6-instruction-SFT
+datasets:
+  - name: allenai/tulu-3-sft-personas-instruction-following
+    type: instruct
+    config: default 
+    source: hf
+  - name: allenai/tulu-3-sft-personas-math
+    type: instruct
+    config: default
+    source: hf
+  - name: allenai/tulu-3-sft-personas-math-grade
+    type: instruct
+    config: default
+    source: hf
+  - name: allenai/tulu-3-sft-personas-code
+    type: instruct
+    config: default
+    source: hf
+output_dir: ./output
+logging_dir: ./logs
+learning_rate: 5e-6
+per_device_train_batch_size: 4
+per_device_eval_batch_size: 4
+num_train_epochs: 2
+weight_decay: 0.01 # should we use weight decay?
+report_to: wandb
+wandb:
+  project: MNLP-qwen-instruction-finetuning
+  name: qwen-instruction-finetuning
+
+
+# from datasets import interleave_datasets
+
+# mixture = interleave_datasets(
+#     [ds1, ds2, ds3],
+#     probabilities=[1.0, 1.0, 1.0]
+# )

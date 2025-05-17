@@ -1,0 +1,25 @@
+# Save options
+push_to_hub: true
+hub_dataset_name: "andresnowak/Instruction-finetuning-mnlp"
+
+datasets:
+  - name: allenai/tulu-3-sft-personas-instruction-following
+    type: instruct
+    config: default 
+    split: train
+    source: hf
+  - name: allenai/tulu-3-sft-personas-math
+    type: instruct
+    config: default
+    split: train
+    source: hf
+  - name: allenai/tulu-3-sft-personas-math-grade
+    type: instruct
+    config: default
+    split: train
+    source: hf
+  - name: allenai/tulu-3-sft-personas-code
+    type: instruct
+    split: train
+    config: default
+    source: hf

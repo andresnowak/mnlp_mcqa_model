@@ -88,7 +88,7 @@ def train(cfg: DictConfig):
         per_device_eval_batch_size=cfg.training.per_device_eval_batch_size,
         num_train_epochs=cfg.training.num_train_epochs,
         weight_decay=cfg.training.weight_decay,
-        eval_strategy="steps",
+        eval_strategy="no",
         eval_steps=500,
         logging_steps=10,
         report_to=cfg.training.report_to,

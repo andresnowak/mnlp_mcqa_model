@@ -9,22 +9,25 @@ datasets:
     config: default 
     split: train
     source: hf
-    columns_to_keep: ["id", "prompt", "messages"]
+    columns_to_keep: ["id", "messages"]
   - name: allenai/tulu-3-sft-personas-math
     subset_name: math
     type: instruct
     config: default
     split: train
     source: hf
+    columns_to_keep: ["id", "messages"]
   - name: allenai/tulu-3-sft-personas-math-grade
     subset_name: mathGrade
     type: instruct
     config: default
     split: train
     source: hf
+    columns_to_keep: ["id", "messages"]
   - name: allenai/tulu-3-sft-personas-code
     subset_name: code
     type: instruct
     split: train
     config: default
     source: hf
+    columns_to_keep: ["id", "messages"]

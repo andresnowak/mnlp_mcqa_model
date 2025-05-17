@@ -63,6 +63,9 @@ if __name__ == "__main__":
     if config.get("push_to_hub", False):
         for name, dataset in combined_dataset.items():
             dataset.push_to_hub(config["hub_dataset_name"], split="train", config_name=name)
+        concatenate_datasets(list(combined_dataset.values())).push_to_hub(
+            config["hub_dataset_name"], split="train", config_name="all"
+        )
         print(f"Dataset uploaded to Hugging Face Hub: {config['hub_dataset_name']}")
     else:
         output_path = config.get("output_path", "combined_dataset")

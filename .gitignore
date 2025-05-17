@@ -4,3 +4,4 @@ env_secrets.py
 *.DS_store
 *__pycache__
 outputs
+*.ipynb_checkpoints

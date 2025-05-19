@@ -122,6 +122,7 @@ def train(cfg: DictConfig):
     tokenizer.pad_token = (
         tokenizer.eos_token if tokenizer.pad_token is None else tokenizer.pad_token
     )
+    tokenizer.chat_template = None
 
     # Tokenization with instruction formatting
 

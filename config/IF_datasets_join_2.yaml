@@ -1,0 +1,36 @@
+# Save options
+push_to_hub: true
+hub_dataset_name: "andresnowak/Instruction-finetuning-mixture-mnlp"
+
+datasets:
+  - name: allenai/tulu-3-sft-mixture
+    type: instruct
+    config: default 
+    split: train
+    source: hf
+    columns_to_keep: ["id", "messages"]
+    column_mapping: {'ai2-adapt-dev/oasst1_converted': "oasst1",
+      'ai2-adapt-dev/flan_v2_converted': 'flanV2',
+      'ai2-adapt-dev/tulu_hard_coded_repeated_10': 'hardCoded',
+      'ai2-adapt-dev/no_robots_converted': 'noRobots',
+      'ai2-adapt-dev/tulu_v3.9_wildchat_100k': 'wildChat',
+      'ai2-adapt-dev/personahub_math_v5_regen_149960': 'mathV5',
+      'allenai/tulu-3-sft-personas-math-grade': 'mathGrade',
+      'ai2-adapt-dev/tulu_v3.9_open_math_2_gsm8k_50k': 'openMathGsm8k',
+      'ai2-adapt-dev/numinamath_tir_math_decontaminated': 'tirMath',
+      'ai2-adapt-dev/tulu_v3.9_personahub_math_interm_algebra_20k': 'mathAlgebra',
+      'ai2-adapt-dev/personahub_code_v2_34999': 'codeV2',
+      'ai2-adapt-dev/evol_codealpaca_heval_decontaminated': 'codeAlpaca',
+      'ai2-adapt-dev/personahub_ifdata_manual_seed_v3_29980': 'ifData',
+      'ai2-adapt-dev/coconot_converted': 'coconot',
+      'ai2-adapt-dev/tulu_v3.9_wildjailbreak_decontaminated_50k': 'wildJailBreak',
+      'ai2-adapt-dev/tulu_v3.9_synthetic_finalresp_wildguardmixtrain_decontaminated_50k': 'wildGuard',
+      'ai2-adapt-dev/tulu_v3.9_sciriff_10k': 'sciriff',
+      'ai2-adapt-dev/tulu_v3.9_table_gpt_5k': 'tableGpt',
+      'ai2-adapt-dev/tulu_v3.9_aya_100k': 'aya'}
+    sources_to_exclude: [ "ai2-adapt-dev/coconot_converted", "ai2-adapt-dev/tulu_v3.9_wildjailbreak_decontaminated_50k", "ai2-adapt-dev/tulu_v3.9_synthetic_finalresp_wildguardmixtrain_decontaminated_50k",] # sources about alignment and jailbreaking
+  - name: data/mnlp_sft_data
+    type: instruct
+    config: default
+    source: local
+    subset_name: epflMnlpQuestionAnswer

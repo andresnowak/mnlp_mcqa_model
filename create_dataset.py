@@ -5,6 +5,7 @@ from huggingface_hub import login
 from src.utils import load_config
 from src.env_secrets import HF_TOKEN
 
+# This one is to join multiple datasets
 def join_datasets(config):
     datasets = config["datasets"]
 

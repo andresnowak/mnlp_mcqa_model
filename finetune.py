@@ -53,9 +53,9 @@ def train(cfg: DictConfig):
     # Resume from checkpoint
     # Look for a latest checkpoint in the output directory
     last_checkpoint = None
-    if os.path.isdir(cfg.output_dir):
+    if os.path.isdir(cfg.training.output_dir):
         from transformers.trainer_utils import get_last_checkpoint
-        last_checkpoint = get_last_checkpoint(cfg.output_dir)
+        last_checkpoint = get_last_checkpoint(cfg.training.output_dir)
 
     ###############
     # Setup logging

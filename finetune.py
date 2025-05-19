@@ -108,11 +108,12 @@ def train(cfg: DictConfig):
     raw_train_datasets = load_dataset(
         cfg.dataset[0].name,
         cfg.dataset[0].config,
-        split={
-            "train": f"train[:{cfg.dataset[0].samples}]"
-            if cfg.dataset[0].get("samples")
-            else "train",
-        },
+        # split={
+        #     "train": f"train[:{cfg.dataset[0].samples}]"
+        #     if cfg.dataset[0].get("samples")
+        #     else "train",
+        # },
+        split=f"train[:{cfg.dataset[0].samples}]" if cfg.datasets[0].get("samples") else "train"
     )
     split = raw_train_datasets.train_test_split(test_size=0.05)
 

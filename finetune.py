@@ -155,7 +155,7 @@ def train(cfg: DictConfig):
         args=training_args,
         train_dataset=raw_train_datasets["train"],
         # eval_dataset=tokenized_datasets["test"],
-        dataset_text_field="text",
+        # dataset_text_field="text",
         data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
     )
 

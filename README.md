@@ -2,6 +2,13 @@
 
 ## Ideas
 - Can we still train with the instruction datasets? or does it make sense to do it?# mnlp_mcqa_model
+  - The answer is yes
+- How much do we clip the grad norms, how much do we clip the grad norm of the linear layers
+- how much gradient batch accumulation do we use
+- should we use weight decay?
+  - I think no
+- What dataset to use for evaluation during training
+- Try and use accelerate
 
 
 ## Notes

@@ -9,6 +9,12 @@ from transformers import (
 from trl import SFTTrainer, SFTConfig
 import torch
 from datasets import load_dataset
+from torch.optim.lr_scheduler import LinearLR
+import logging
+import transformers
+import sys
+import datasets
+import os
 
 device = (
     "cuda"
@@ -17,16 +23,64 @@ device = (
     if torch.backends.mps.is_available()
     else "cpu"
 )
+logger = logging.getLogger(__name__)
+
+def format_instruction(example):
+    return f"### Instruction:\n{example['instruction']}\n\n### Response:\n{example['output']}"
+
+def tokenize_function(examples, tokenizer):
+    texts = [format_instruction(ex) for ex in examples]
+    return tokenizer(
+        texts,
+        truncation=True,
+        padding="max_length",
+        max_length=2048,
+        return_tensors="pt",
+    )
+
+def get_wandb_id(cfg):
+    run_id_path = os.path.join(cfg.training.output_dir, "wandb_run_id.txt")
+
+    if os.path.exists(run_id_path):
+        with open(run_id_path, "r") as f:
+            run_id = f.read().strip()
+    else:
+        run_id = None  # start a new run if no ID is saved
 
 
 @hydra.main(config_path="config", config_name="IF-config_sweep.yml", version_base="1.1")
 def train(cfg: DictConfig):
+    # Resume from checkpoint
+    # Look for a latest checkpoint in the output directory
+    last_checkpoint = None
+    if os.path.isdir(cfg.output_dir):
+        from transformers.trainer_utils import get_last_checkpoint
+        last_checkpoint = get_last_checkpoint(cfg.output_dir)
+
+    ###############
+    # Setup logging
+    ###############
+    logging.basicConfig(
+        format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        handlers=[logging.StreamHandler(sys.stdout)],
+    )
+    log_level = 1
+    logger.setLevel(log_level)
+    datasets.utils.logging.set_verbosity(log_level)
+    transformers.utils.logging.set_verbosity(log_level)
+    transformers.utils.logging.enable_default_handler()
+    transformers.utils.logging.enable_explicit_format()
+
     # Initialize wandb (ensure no legacy-service warnings)
     wandb.init(
+        id=get_wandb_id(cfg)
         project=cfg.wandb.project, 
         name=cfg.wandb.name,  
         config=OmegaConf.to_container(cfg, resolve=True),  # export all cfg to wandb)
     )
+    with open(os.path.join(cfg.training.output_dir, "wandb_run_id.txt"), "w") as f:
+        f.write(wandb.run.id)
 
     # Override with sweep parameters
     if wandb.config:
@@ -55,18 +109,7 @@ def train(cfg: DictConfig):
     )
 
     # Tokenization with instruction formatting
-    def format_instruction(example):
-        return f"### Instruction:\n{example['instruction']}\n\n### Response:\n{example['output']}"
 
-    def tokenize_function(examples):
-        texts = [format_instruction(ex) for ex in examples]
-        return tokenizer(
-            texts,
-            truncation=True,
-            padding="max_length",
-            max_length=2048,
-            return_tensors="pt",
-        )
 
     # tokenized_datasets = raw_train_datasets.map(
     #     tokenize_function,
@@ -95,6 +138,7 @@ def train(cfg: DictConfig):
         save_strategy="steps",
         bf16=torch.cuda.is_bf16_supported(),
         fp16=not torch.cuda.is_bf16_supported(),
+        lr_scheduler_type="linear",
     )
 
     trainer = SFTTrainer(
@@ -102,10 +146,11 @@ def train(cfg: DictConfig):
         args=training_args,
         train_dataset=raw_train_datasets["train"],
         # eval_dataset=tokenized_datasets["test"],
+        dataset_text_field="text",
         data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
     )
 
-    trainer.train()
+    trainer.train(resume_from_checkpoint=last_checkpoint)
     wandb.finish()
 
 if __name__ == "__main__":

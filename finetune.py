@@ -151,6 +151,7 @@ def train(cfg: DictConfig):
         logging_steps=50,
         report_to=cfg.training.report_to,
         save_strategy="steps",
+        save_total_limit=3,
         bf16=torch.cuda.is_bf16_supported(),
         fp16=not torch.cuda.is_bf16_supported(),
         lr_scheduler_type="linear",

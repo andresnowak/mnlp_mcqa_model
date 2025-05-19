@@ -23,6 +23,7 @@ device = (
     if torch.backends.mps.is_available()
     else "cpu"
 )
+print(f"Available gpus {torch.cuda.device_count()}")
 logger = logging.getLogger(__name__)
 
 

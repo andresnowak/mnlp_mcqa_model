@@ -1,5 +1,6 @@
 *.egg-info
 Understanding-LLM-Internals
+alignment-handbook
 env_secrets.py
 *.DS_store
 *__pycache__

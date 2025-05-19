@@ -80,7 +80,7 @@ def train(cfg: DictConfig):
     wandb_id = get_wandb_id(cfg)
     run = wandb.init(
         id=wandb_id[0],
-        resume=wandb_id[1]
+        resume=wandb_id[1],
         project=cfg.wandb.project, 
         name=cfg.wandb.name,  
         config=OmegaConf.to_container(cfg, resolve=True),  # export all cfg to wandb)

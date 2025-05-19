@@ -7,10 +7,10 @@ model:
 dataset:
   - name: andresnowak/Instruction-finetuning-mnlp
     config: all
-    samples: 2000  # Reduced for sweeps
+    samples: 100000  # Reduced for sweeps
   - name: cais/mmlu
     config: default
-    samples: 2000
+    samples: 20000
 
 training:
   output_dir: ./output

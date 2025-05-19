@@ -74,7 +74,7 @@ def train(cfg: DictConfig):
 
     # Initialize wandb (ensure no legacy-service warnings)
     wandb.init(
-        id=get_wandb_id(cfg)
+        id=get_wandb_id(cfg),
         project=cfg.wandb.project, 
         name=cfg.wandb.name,  
         config=OmegaConf.to_container(cfg, resolve=True),  # export all cfg to wandb)

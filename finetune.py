@@ -25,8 +25,10 @@ device = (
 )
 logger = logging.getLogger(__name__)
 
+
 def format_instruction(example):
     return f"### Instruction:\n{example['instruction']}\n\n### Response:\n{example['output']}"
+
 
 def tokenize_function(examples, tokenizer):
     texts = [format_instruction(ex) for ex in examples]
@@ -37,6 +39,7 @@ def tokenize_function(examples, tokenizer):
         max_length=2048,
         return_tensors="pt",
     )
+
 
 def get_wandb_id(cfg):
     wandb_id_path = os.path.join(cfg.training.output_dir, "wandb_run_id.txt")
@@ -59,6 +62,7 @@ def train(cfg: DictConfig):
     last_checkpoint = None
     if os.path.isdir(cfg.training.output_dir):
         from transformers.trainer_utils import get_last_checkpoint
+
         last_checkpoint = get_last_checkpoint(cfg.training.output_dir)
 
     ###############
@@ -81,8 +85,8 @@ def train(cfg: DictConfig):
     run = wandb.init(
         id=wandb_id[0],
         resume=wandb_id[1],
-        project=cfg.wandb.project, 
-        name=cfg.wandb.name,  
+        project=cfg.wandb.project,
+        name=cfg.wandb.name,
         config=OmegaConf.to_container(cfg, resolve=True),  # export all cfg to wandb)
     )
     wandb_id_path = os.path.join(cfg.training.output_dir, "wandb_run_id.txt")
@@ -110,6 +114,7 @@ def train(cfg: DictConfig):
             else "train",
         },
     )
+    split = raw_train_datasets.train_test_split(test_size=0.05)
 
     # Tokenizer setup
     tokenizer = AutoTokenizer.from_pretrained(cfg.model.name)
@@ -118,7 +123,6 @@ def train(cfg: DictConfig):
     )
 
     # Tokenization with instruction formatting
-
 
     # tokenized_datasets = raw_train_datasets.map(
     #     tokenize_function,
@@ -140,9 +144,11 @@ def train(cfg: DictConfig):
         per_device_eval_batch_size=cfg.training.per_device_eval_batch_size,
         num_train_epochs=cfg.training.num_train_epochs,
         weight_decay=cfg.training.weight_decay,
-        eval_strategy="no",
-        eval_steps=500,
-        logging_steps=10,
+        gradient_accumulation_steps=cfg.training.gradient_accumulation_steps,
+        max_grad_norm=cfg.training.max_grad_norm,
+        eval_strategy="steps",
+        eval_steps=1000,
+        logging_steps=50,
         report_to=cfg.training.report_to,
         save_strategy="steps",
         bf16=torch.cuda.is_bf16_supported(),
@@ -153,14 +159,15 @@ def train(cfg: DictConfig):
     trainer = SFTTrainer(
         model=model,
         args=training_args,
-        train_dataset=raw_train_datasets["train"],
-        # eval_dataset=tokenized_datasets["test"],
+        train_dataset=split["train"],
+        eval_dataset=split["test"],
         # dataset_text_field="text",
         data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
     )
 
     trainer.train(resume_from_checkpoint=last_checkpoint)
     wandb.finish()
+
 
 if __name__ == "__main__":
     train()

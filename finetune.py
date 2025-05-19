@@ -85,8 +85,11 @@ def train(cfg: DictConfig):
         name=cfg.wandb.name,  
         config=OmegaConf.to_container(cfg, resolve=True),  # export all cfg to wandb)
     )
-    with open(os.path.join(cfg.training.output_dir, "wandb_run_id.txt"), "w") as f:
-        f.write(run.id)
+    wandb_id_path = os.path.join(cfg.training.output_dir, "wandb_run_id.txt")
+    if not os.path.exists(wandb_id_path):
+        os.makedirs(cfg.training.output_dir, exist_ok=True)
+        with open(wandb_id_path, "w") as f:
+            f.write(run.id)
 
     # Override with sweep parameters
     if wandb.config:

@@ -39,13 +39,17 @@ def tokenize_function(examples, tokenizer):
     )
 
 def get_wandb_id(cfg):
-    run_id_path = os.path.join(cfg.training.output_dir, "wandb_run_id.txt")
+    wandb_id_path = os.path.join(cfg.training.output_dir, "wandb_run_id.txt")
 
-    if os.path.exists(run_id_path):
-        with open(run_id_path, "r") as f:
-            run_id = f.read().strip()
+    if os.path.exists(wandb_id_path):
+        with open(wandb_id_path, "r") as f:
+            wandb_id = f.read().strip()
+        resume_mode = "must"
     else:
-        run_id = None  # start a new run if no ID is saved
+        wandb_id = None
+        resume_mode = "allow"
+
+    return wandb_id, resume_mode
 
 
 @hydra.main(config_path="config", config_name="IF-config_sweep.yml", version_base="1.1")
@@ -73,14 +77,16 @@ def train(cfg: DictConfig):
     transformers.utils.logging.enable_explicit_format()
 
     # Initialize wandb (ensure no legacy-service warnings)
-    wandb.init(
-        id=get_wandb_id(cfg),
+    wandb_id = get_wandb_id(cfg)
+    run = wandb.init(
+        id=wandb_id[0],
+        resume=wandb_id[1]
         project=cfg.wandb.project, 
         name=cfg.wandb.name,  
         config=OmegaConf.to_container(cfg, resolve=True),  # export all cfg to wandb)
     )
     with open(os.path.join(cfg.training.output_dir, "wandb_run_id.txt"), "w") as f:
-        f.write(wandb.run.id)
+        f.write(run.id)
 
     # Override with sweep parameters
     if wandb.config:

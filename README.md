@@ -32,3 +32,4 @@
  ```
 - We are using bf16 so i think here the mixed precision is not a problem
 - Use Flash attention 2
+- Always add this line export `export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7` so we can see all the gpus for multi gpu training and not just one (in the end probably this isn't possible becasuse the gpus are assigned a memory size by default for each student I think and i get Out of Memory errors because of this)

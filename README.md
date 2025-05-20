@@ -13,11 +13,15 @@
 
 ## Notes
 - When using a dataset with a "messages" field (like the example above), the SFTTrainer automatically applies the model's chat template, which it retrieves from the hub. This means you don't need any additional configuration to handle chat-style conversations - the trainer will format the messages according to the model's expected template format.
-  - So what we have to do for formatting is do {Question} \n {Answer}
+  - So what we have to do for formatting is do {Question} \n {Answer} (the answer is yes it seems), and we should use packing when finetuning
+  - We have to shuffle the training set before each epoch
 - Use Flash attention and accelerate
 - Maybe use QLora
-- Does SFTT and in general when doing finetuning, is the loss done on Question and Answer? or just the answer
+- Does SFTT and in general when doing finetuning, is the loss done on Question and Answer? or just the answer?
+  - For the training also doing the masking of the question seems to depend on the finetuning task, for the instruction finetuning it seems we don't have to mask the question
 - Use packing maybe, because it helps putting multiple examples in a single prompt up to max seq length (packing adds eos sentence tokens between examples)
+- We should use an effective batch size of 128
+  - Doing small batch sizes makes the gradient noisy, and this can make the model take a "zig-zag" path to the optimal solution
 
 
 ## Training efficiency

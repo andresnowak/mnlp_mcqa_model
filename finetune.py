@@ -15,6 +15,7 @@ import transformers
 import sys
 import datasets
 import os
+from unsloth import FastLanguageModel
 
 device = (
     "cuda"
@@ -135,7 +136,8 @@ def train(cfg: DictConfig):
     # )
 
     # Model
-    model = AutoModelForCausalLM.from_pretrained(
+    model = FastLanguageModel.from_pretrained(
+    # model = AutoModelForCausalLM.from_pretrained(
         cfg.model.name,
         torch_dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16,
         attn_implementation="flash_attention_2",
@@ -151,6 +153,7 @@ def train(cfg: DictConfig):
         weight_decay=cfg.training.weight_decay,
         gradient_accumulation_steps=cfg.training.gradient_accumulation_steps,
         max_grad_norm=cfg.training.max_grad_norm,
+        warmup_ratio=0.3,
         eval_strategy="steps",
         eval_steps=1000,
         logging_steps=50,

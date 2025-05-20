@@ -7,7 +7,7 @@ model:
 dataset:
   - name: andresnowak/Instruction-finetuning-mnlp
     config: all
-    samples: 100000  # Reduced for sweeps
+    samples: 100000
   - name: cais/mmlu
     config: default
     samples: 20000
@@ -20,7 +20,7 @@ training:
   learning_rate: 5e-6  # Default value
   per_device_train_batch_size: 2
   per_device_eval_batch_size: 2
-  gradient_accumulation_steps: 8
+  gradient_accumulation_steps: 64 # to get effective 128
   num_train_epochs: 2
   weight_decay: 0.00
   max_grad_norm: 1.0

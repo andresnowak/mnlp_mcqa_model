@@ -128,7 +128,7 @@ def train(cfg: DictConfig):
     # Load dataset with subset for sweeps
     raw_train_datasets = load_dataset(
         cfg.dataset[0].name, cfg.dataset[0].config, split="train"
-    ).shuffle(seed=42)
+    ).shuffle(seed=cfg.defaults.seed)
 
     # Then select the number of samples you want from the shuffled dataset
     if cfg.dataset[0].get("samples"):
@@ -156,7 +156,7 @@ def train(cfg: DictConfig):
         dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16,
         attn_implementation="flash_attention_2",
         load_in_4bit=False,
-        load_in_8bit=False, 
+        load_in_8bit=False,
     )
     # model = model.to(device) # the model is already passed to the device
 

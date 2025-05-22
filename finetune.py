@@ -1,3 +1,5 @@
+import unsloth
+from unsloth import FastLanguageModel
 import hydra
 from omegaconf import DictConfig, OmegaConf
 import wandb
@@ -15,7 +17,6 @@ import transformers
 import sys
 import datasets
 import os
-from unsloth import FastLanguageModel
 
 device = (
     "cuda"
@@ -50,10 +51,7 @@ def tokenize_chat_function(examples, tokenizer):
     Tokenize chat-based examples where each example has a 'messages' field
     containing a list of message dictionaries.
     """
-    texts = []
-    for messages in examples["messages"]:
-        formatted_text = format_chat_messages(messages)
-        texts.append(formatted_text)
+    texts = [format_chat_messages(messages) for messages in examples["messages"]]
 
     return tokenizer(
         texts,
@@ -146,18 +144,21 @@ def train(cfg: DictConfig):
 
     # Tokenization with instruction formatting
     tokenized_dataset = raw_train_datasets.map(
-        tokenize_chat_function,
+        lambda x: tokenize_chat_function(x, tokenizer),
         batched=True,
     )
     split = tokenized_dataset.train_test_split(test_size=0.05)
 
     # Model
-    model = FastLanguageModel.from_pretrained(
+    model, tokenizer = FastLanguageModel.from_pretrained(
         # model = AutoModelForCausalLM.from_pretrained(
         cfg.model.name,
-        torch_dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16,
+        dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16,
         attn_implementation="flash_attention_2",
-    ).to(device)
+        load_in_4bit=False,
+        load_in_8bit=False, 
+    )
+    # model = model.to(device) # the model is already passed to the device
 
     # Training setup
     training_args = SFTConfig(
@@ -171,7 +172,7 @@ def train(cfg: DictConfig):
         max_grad_norm=cfg.training.max_grad_norm,
         warmup_ratio=cfg.training.warmup_ratio,
         eval_strategy="steps",
-        eval_steps=1000,
+        eval_steps=200,
         logging_steps=50,
         report_to=cfg.training.report_to,
         save_strategy="steps",

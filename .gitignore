@@ -7,3 +7,4 @@ env_secrets.py
 outputs
 *.ipynb_checkpoints
 data
+unsloth_compiled_cache

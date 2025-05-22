@@ -13,7 +13,7 @@
 
 ## Notes
 - When using a dataset with a "messages" field (like the example above), the SFTTrainer automatically applies the model's chat template, which it retrieves from the hub. This means you don't need any additional configuration to handle chat-style conversations - the trainer will format the messages according to the model's expected template format.
-  - So what we have to do for formatting is do {Question} \n {Answer} (the answer is yes it seems), and we should use packing when finetuning
+  - **So what we have to do for formatting is do {Question} \n {Answer} (the answer is yes it seems), and we should use packing when finetuning**
   - We have to shuffle the training set before each epoch
 - Use Flash attention and accelerate
 - Maybe use QLora
@@ -27,16 +27,19 @@
 ## Training efficiency
 - Use accelerate
   - ```
-  accelerate launch 
- --mixed_precision $DTYPE 
+  accelerate launch
+ --mixed_precision $DTYPE
  --num_machines $NUM_NODES
- --num_processes $NUM_GPUS 
+ --num_processes $NUM_GPUS
 --dynamo_backend 'no'
  finetune.py
  ```
 - We are using bf16 so i think here the mixed precision is not a problem
 - Use Flash attention 2
 - Always add this line export `export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7` so we can see all the gpus for multi gpu training and not just one (in the end probably this isn't possible becasuse the gpus are assigned a memory size by default for each student I think and i get Out of Memory errors because of this)
+
+## Heuristics of how things work
+- First warmup ratio, at the beggining it is possible teh gradient norm will be zero becasue it will be scaled by a very small learning rate, but the computation are not wasted as Optimizers (e.g., Adam) still accumulate gradient statistics (mean/variance) during warmup, which are critical for later steps. But we won't be training on that part of the dataset, we are just computing the momentums for the optimizer.
 
 
 ## Extra

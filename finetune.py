@@ -28,17 +28,38 @@ print(f"Available gpus {torch.cuda.device_count()}")
 logger = logging.getLogger(__name__)
 
 
-def format_instruction(example):
-    return f"### Instruction:\n{example['instruction']}\n\n### Response:\n{example['output']}"
+def format_chat_messages(messages):
+    formatted_text = ""
+    for message in messages:
+        role = message.get("role", "").lower()
+        content = message.get("content", "")
+
+        if role == "user":
+            formatted_text += f"{content}\n\n"
+        elif role == "assistant":
+            formatted_text += f"{content}\n\n"
+        else:
+            # Handle any other roles
+            pass
+
+    return formatted_text.strip()
 
 
-def tokenize_function(examples, tokenizer):
-    texts = [format_instruction(ex) for ex in examples]
+def tokenize_chat_function(examples, tokenizer):
+    """
+    Tokenize chat-based examples where each example has a 'messages' field
+    containing a list of message dictionaries.
+    """
+    texts = []
+    for messages in examples["messages"]:
+        formatted_text = format_chat_messages(messages)
+        texts.append(formatted_text)
+
     return tokenizer(
         texts,
         truncation=True,
         padding="max_length",
-        max_length=2048,
+        max_length=2048,  # we are forced to use this max length
         return_tensors="pt",
     )
 
@@ -108,16 +129,12 @@ def train(cfg: DictConfig):
 
     # Load dataset with subset for sweeps
     raw_train_datasets = load_dataset(
-        cfg.dataset[0].name,
-        cfg.dataset[0].config,
-        # split={
-        #     "train": f"train[:{cfg.dataset[0].samples}]"
-        #     if cfg.dataset[0].get("samples")
-        #     else "train",
-        # },
-        split=f"train[:{cfg.dataset[0].samples}]" if cfg.dataset[0].get("samples") else "train"
-    )
-    split = raw_train_datasets.train_test_split(test_size=0.05)
+        cfg.dataset[0].name, cfg.dataset[0].config, split="train"
+    ).shuffle(seed=42)
+
+    # Then select the number of samples you want from the shuffled dataset
+    if cfg.dataset[0].get("samples"):
+        raw_train_datasets = raw_train_datasets.select(range(cfg.dataset[0].samples))
 
     # Tokenizer setup
     tokenizer = AutoTokenizer.from_pretrained(cfg.model.name)
@@ -128,16 +145,15 @@ def train(cfg: DictConfig):
     tokenizer.padding_side = "left"  # Critical for Flash Attention compatibility (It seems Qwen3 Flash attention needs this <pad> value, instead of value <pad>)
 
     # Tokenization with instruction formatting
-
-    # tokenized_datasets = raw_train_datasets.map(
-    #     tokenize_function,
-    #     batched=True,
-    #     remove_columns=raw_train_datasets["train"].column_names,
-    # )
+    tokenized_dataset = raw_train_datasets.map(
+        tokenize_chat_function,
+        batched=True,
+    )
+    split = tokenized_dataset.train_test_split(test_size=0.05)
 
     # Model
     model = FastLanguageModel.from_pretrained(
-    # model = AutoModelForCausalLM.from_pretrained(
+        # model = AutoModelForCausalLM.from_pretrained(
         cfg.model.name,
         torch_dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16,
         attn_implementation="flash_attention_2",
@@ -153,7 +169,7 @@ def train(cfg: DictConfig):
         weight_decay=cfg.training.weight_decay,
         gradient_accumulation_steps=cfg.training.gradient_accumulation_steps,
         max_grad_norm=cfg.training.max_grad_norm,
-        warmup_ratio=0.3,
+        warmup_ratio=cfg.training.warmup_ratio,
         eval_strategy="steps",
         eval_steps=1000,
         logging_steps=50,

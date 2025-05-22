@@ -6,3 +6,4 @@ env_secrets.py
 *__pycache__
 outputs
 *.ipynb_checkpoints
+data

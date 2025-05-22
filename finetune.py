@@ -173,7 +173,7 @@ def train(cfg: DictConfig):
         warmup_ratio=cfg.training.warmup_ratio,
         eval_strategy="steps",
         eval_steps=200,
-        logging_steps=50,
+        logging_steps=10,
         report_to=cfg.training.report_to,
         save_strategy="steps",
         save_total_limit=3,

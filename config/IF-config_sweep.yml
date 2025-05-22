@@ -7,7 +7,7 @@ model:
 dataset:
   - name: andresnowak/Instruction-finetuning-mixture-mnlp
     config: all
-    samples: 100000
+    samples: 200000
   - name: cais/mmlu
     config: default
     samples: 20000
@@ -18,9 +18,9 @@ training:
   resume_dir: None
   report_to: wandb
   learning_rate: 5e-6  # Default value
-  per_device_train_batch_size: 4
-  per_device_eval_batch_size: 4
-  gradient_accumulation_steps: 32 # to get effective 128
+  per_device_train_batch_size: 8
+  per_device_eval_batch_size: 8
+  gradient_accumulation_steps: 16 # to get effective 128
   num_train_epochs: 2
   weight_decay: 0.00
   warmup_ratio: 0.3

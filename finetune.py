@@ -29,7 +29,7 @@ print(f"Available gpus {torch.cuda.device_count()}")
 logger = logging.getLogger(__name__)
 
 
-def format_chat_messages(messages):
+def format_chat_messages(messages, tokenizer):
     formatted_text = ""
     for message in messages:
         role = message.get("role", "").lower()
@@ -42,6 +42,7 @@ def format_chat_messages(messages):
         else:
             # Handle any other roles
             pass
+        formatted_text += tokenizer.eos_token # add eos_token so it doesn't go on forever
 
     return formatted_text.strip()
 
@@ -51,15 +52,17 @@ def tokenize_chat_function(examples, tokenizer):
     Tokenize chat-based examples where each example has a 'messages' field
     containing a list of message dictionaries.
     """
-    texts = [format_chat_messages(messages) for messages in examples["messages"]]
+    texts = [format_chat_messages(messages, tokenizer) for messages in examples["messages"]]
 
-    return tokenizer(
-        texts,
-        truncation=True,
-        padding="max_length",
-        max_length=2048,  # we are forced to use this max length
-        # return_tensors="pt",
-    )
+    return {"text": texts}
+
+    # return tokenizer(
+    #     texts,
+    #     truncation=True,
+    #     padding="max_length",
+    #     max_length=2048,  # we are forced to use this max length
+    #     # return_tensors="pt",
+    # )
 
 
 def get_wandb_id(cfg):
@@ -128,26 +131,11 @@ def train(cfg: DictConfig):
     # Load dataset with subset for sweeps
     raw_train_datasets = load_dataset(
         cfg.dataset[0].name, cfg.dataset[0].config, split="train"
-    ).shuffle(seed=cfg.defaults.seed)
+    ).shuffle(seed=cfg.environment.seed)
 
     # Then select the number of samples you want from the shuffled dataset
     if cfg.dataset[0].get("samples"):
         raw_train_datasets = raw_train_datasets.select(range(cfg.dataset[0].samples))
-
-    # Tokenizer setup
-    tokenizer = AutoTokenizer.from_pretrained(cfg.model.name)
-    tokenizer.pad_token = (
-        tokenizer.eos_token if tokenizer.pad_token is None else tokenizer.pad_token
-    )
-    tokenizer.chat_template = None
-    tokenizer.padding_side = "left"  # Critical for Flash Attention compatibility (It seems Qwen3 Flash attention needs this <pad> value, instead of value <pad>)
-
-    # Tokenization with instruction formatting
-    tokenized_dataset = raw_train_datasets.map(
-        lambda x: tokenize_chat_function(x, tokenizer),
-        batched=True,
-    )
-    split = tokenized_dataset.train_test_split(test_size=0.05)
 
     # Model
     model, tokenizer = FastLanguageModel.from_pretrained(
@@ -159,6 +147,26 @@ def train(cfg: DictConfig):
         load_in_8bit=False,
     )
     # model = model.to(device) # the model is already passed to the device
+    # It seems by default the model with unsloth doesn't have require grad = true, only when using lora it seems
+    for param in model.parameters():
+        param.requires_grad = True
+
+    # Tokenizer setup
+    # tokenizer = AutoTokenizer.from_pretrained(cfg.model.name)
+    tokenizer.pad_token = (
+        tokenizer.eos_token if tokenizer.pad_token is None else tokenizer.pad_token
+    )
+    tokenizer.chat_template = None
+    tokenizer.padding_side = "left"  # Critical for Flash Attention compatibility (It seems Qwen3 Flash attention needs this <pad> value, instead of value <pad>)
+    tokenizer.max_length = 2048
+
+    # Tokenization with instruction formatting
+    tokenized_dataset = raw_train_datasets.map(
+        lambda x: tokenize_chat_function(x, tokenizer),
+        batched=True,
+        num_proc=4,
+    )
+    split = tokenized_dataset.train_test_split(test_size=0.05)
 
     # Training setup
     training_args = SFTConfig(
@@ -180,15 +188,17 @@ def train(cfg: DictConfig):
         bf16=torch.cuda.is_bf16_supported(),
         fp16=not torch.cuda.is_bf16_supported(),
         lr_scheduler_type="linear",
+        seed=cfg.environment.seed,
     )
 
     trainer = SFTTrainer(
         model=model,
+        tokenizer=tokenizer,
         args=training_args,
         train_dataset=split["train"],
         eval_dataset=split["test"],
-        # dataset_text_field="text",
-        data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
+        dataset_text_field = "text",
+        # data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
     )
 
     trainer.train(resume_from_checkpoint=last_checkpoint)

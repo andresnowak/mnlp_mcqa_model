@@ -1,6 +1,8 @@
 defaults:
   - override hydra/job_logging: disabled
-  - seed: 42
+
+environment:
+  seed: 42
 
 model:
   name: Qwen/Qwen3-0.6B-Base

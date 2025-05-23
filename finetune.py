@@ -58,7 +58,7 @@ def tokenize_chat_function(examples, tokenizer):
         truncation=True,
         padding="max_length",
         max_length=2048,  # we are forced to use this max length
-        return_tensors="pt",
+        # return_tensors="pt",
     )
 
 

@@ -19,6 +19,7 @@
 - Maybe use QLora
 - Does SFTT and in general when doing finetuning, is the loss done on Question and Answer? or just the answer?
   - For the training also doing the masking of the question seems to depend on the finetuning task, for the instruction finetuning it seems we don't have to mask the question
+    - Still not sure if we have to mask the question (or instruction) or not during training?
 - Use packing maybe, because it helps putting multiple examples in a single prompt up to max seq length (packing adds eos sentence tokens between examples)
 - We should use an effective batch size of 128
   - Doing small batch sizes makes the gradient noisy, and this can make the model take a "zig-zag" path to the optimal solution
@@ -40,6 +41,7 @@
 
 ## Heuristics of how things work
 - First warmup ratio, at the beggining it is possible teh gradient norm will be zero becasue it will be scaled by a very small learning rate, but the computation are not wasted as Optimizers (e.g., Adam) still accumulate gradient statistics (mean/variance) during warmup, which are critical for later steps. But we won't be training on that part of the dataset, we are just computing the momentums for the optimizer.
+- With smaller models you can use bigger learning rates, as we have fewer parameters the gradients have less averaging acrros parameters, so they aere deterinistic
 
 
 ## Extra

@@ -6,6 +6,7 @@ environment:
 
 model:
   name: Qwen/Qwen3-0.6B-Base
+  hub_model_id: andresnowak/Qwen3-0.6B-instruction-finetuned
 
 dataset:
   - name: andresnowak/Instruction-finetuning-mixture-mnlp

@@ -189,6 +189,8 @@ def train(cfg: DictConfig):
         fp16=not torch.cuda.is_bf16_supported(),
         lr_scheduler_type="linear",
         seed=cfg.environment.seed,
+        push_to_hub=True,
+        hub_model_id=cfg.model.hub_model_id
     )
 
     trainer = SFTTrainer(

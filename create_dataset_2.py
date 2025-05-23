@@ -2,10 +2,22 @@ from datasets import load_dataset, concatenate_datasets, DatasetDict, load_from_
 import argparse
 from huggingface_hub import login
 import time
+from langdetect import detect
 
 from src.utils import load_config
 from src.env_secrets import HF_TOKEN
 
+
+# Step 1: Filter out non-English data
+def is_english(example):
+    flag = True
+    for message in example["messages"]:
+        try:
+            flag = flag and detect(message["content"]) == "en"
+        except:
+            flag = False
+
+    return flag
 
 # This one is specfic to the allenai sft mixture
 def join_datasets(config):
@@ -21,6 +33,10 @@ def join_datasets(config):
     filtered_dataset = dataset.filter(lambda x: x["source"] not in sources_to_exclude)
     print("Size after excluding sources: ", len(filtered_dataset))
     filtered_dataset = filtered_dataset.filter(lambda x: len(x["messages"]) == 2) # we only want instruction - answer
+    print("Size of only content with 2 messages: ", len(filtered_dataset))
+    if config.get("only_english"):
+        print("Only english data")
+        filtered_dataset = filtered_dataset.filter(is_english, num_proc=8)
     print("Final size: ", len(filtered_dataset))
 
     sources = dataset.unique("source")

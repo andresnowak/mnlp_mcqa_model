@@ -3,13 +3,13 @@ from sentence_transformers import SentenceTransformer
 from torch.utils.data import Dataset
 from sklearn.metrics import accuracy_score
 from torch.utils.data import DataLoader
-from transformers import Trainer
+from transformers import Trainer, PreTrainedModel, PreTrainedTokenizerBase
 import torch
 import torch.nn.functional as F
 
 class MCQATrainer(Trainer):
     def compute_loss(
-        self, model, tokenizer, inputs, return_outputs=False
+        self, model: PreTrainedModel, tokenizer: PreTrainedTokenizerBase, inputs, return_outputs=False
     ):
         """
         For each prompt we run the model once, grab the final (next‐token)

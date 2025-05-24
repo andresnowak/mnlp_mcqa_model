@@ -42,8 +42,7 @@ MARKDOWN_SEPARATORS = [
 ]
 
 class MCQADatasetClassification(Dataset):
-    def __init__(self, data, tokenizer):
-        self.tokenizer = tokenizer
+    def __init__(self, data):
         self.data = data
 
     def __len__(self):

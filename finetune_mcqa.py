@@ -55,7 +55,7 @@ def mcqa_collatefn(batch):
     }
 
 
-@hydra.main(config_path="config", config_name="IF-config_sweep.yml", version_base="1.1")
+@hydra.main(config_path="config", config_name="MCQA-config.yaml", version_base="1.1")
 def train(cfg: DictConfig):
     # Resume from checkpoint
     # Look for a latest checkpoint in the output directory

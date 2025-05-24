@@ -33,36 +33,35 @@ class MCQATrainer(Trainer):
             for opts in all_options
         ]
 
-        for prompt, opt_ids, target in zip(prompts, option_token_ids, correct_idxs):
-            # 1) encode prompt
-            enc = self.tokenizer(
-                prompt,
-                return_tensors="pt",
-                truncation=True,
-                padding=True,
-                max_length=2048,
-            ).to(device)
+        # 1) Batch encode prompts
+        enc = self.tokenizer(
+            prompts,
+            return_tensors="pt",
+            truncation=True,
+            padding=True,
+            max_length=2048,
+        ).to(device)
 
-            # 2) single forward pass
-            outputs = model(**enc)
-            # outputs.logits: [1, seq_len, vocab_size]
-            last_logits = outputs.logits[:, -1, :]  # [1, V]
+        # 2) Forward pass over the full batch
+        outputs = model(**enc)  # logits: [B, seq_len, V]
+        last_logits = outputs.logits[:, -1, :]  # [B, V]
 
-            # 3) pick out the logits for our option tokens → [1, num_opts], so in this case letters (A, B, etc...)
-            opt_logits = last_logits[:, opt_ids]  # [1, num_opts]
-            batch_logits.append(opt_logits.squeeze(0))  # [num_opts]
+        # 3) Convert option_token_ids to tensor [B, O]
+        opt_ids_tensor = torch.tensor(option_token_ids, device=device)  # [B, O]
 
-            # 4) CE against the correct index
-            tgt = torch.tensor([target], device=device)
-            losses.append(F.cross_entropy(opt_logits, tgt))
+        # 4) Gather logits at option token positions
+        # This gives [B, O]
+        opt_logits = torch.gather(
+            last_logits.unsqueeze(1).expand(-1, opt_ids_tensor.shape[1], -1),  # [B, O, V]
+            2,
+            opt_ids_tensor.unsqueeze(2),  # [B, O, 1]
+        ).squeeze(-1)  # -> [B, O]
 
-            del enc, outputs, last_logits, opt_logits, tgt
-            torch.cuda.empty_cache()
+        # 5) Cross-entropy loss per row
+        targets = torch.tensor(correct_idxs, device=device)  # [B]
+        loss = F.cross_entropy(opt_logits, targets)  # this will average over batch by default
 
-        loss = torch.stack(losses).mean()
-        logits = torch.stack(batch_logits)  # [batch, num_opts]
-
-        return (loss, logits) if return_outputs else loss
+        return (loss, opt_logits) if return_outputs else loss
 
     def get_train_dataloader(self) -> DataLoader:
         dataloader_params = {"batch_size": self.args.train_batch_size, "collate_fn": self.data_collator}

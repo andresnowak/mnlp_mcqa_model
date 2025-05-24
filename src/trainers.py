@@ -24,14 +24,18 @@ class MCQATrainer(Trainer):
         correct_idxs = inputs["correct_idx"]  # List[int]
         all_options = inputs["options"]  # List[List[str]]
 
-        batch_logits = []
-        losses = []
+        # 1. Pre-tokenize options and find max options per sample
+        option_token_ids = []
+        max_options = max(len(opts) for opts in all_options)
 
-        # Pre‐tokenize all option‐letters to single token IDs
-        option_token_ids = [
-            [self.tokenizer(opt, add_special_tokens=False).input_ids[0] for opt in opts]
-            for opts in all_options
-        ]
+        for opts in all_options:
+            # Get first token ID for each option
+            opt_ids = [
+                self.tokenizer(opt, add_special_tokens=False).input_ids[0] for opt in opts
+            ]
+            # Pad with -100 (ignored by CE loss) if fewer options than max
+            padded = opt_ids + [-100] * (max_options - len(opt_ids))
+            option_token_ids.append(padded)
 
         # 1) Batch encode prompts
         enc = self.tokenizer(
@@ -48,14 +52,18 @@ class MCQATrainer(Trainer):
 
         # 3) Convert option_token_ids to tensor [B, O]
         opt_ids_tensor = torch.tensor(option_token_ids, device=device)  # [B, O]
+        mask = opt_ids_tensor != -100  # [B, max_O], True for valid options
+
+        expanded_logits = last_logits.unsqueeze(1).expand(-1, max_options, -1)
 
         # 4) Gather logits at option token positions
         # This gives [B, O]
-        opt_logits = torch.gather(
-            last_logits.unsqueeze(1).expand(-1, opt_ids_tensor.shape[1], -1),  # [B, O, V]
-            2,
-            opt_ids_tensor.unsqueeze(2),  # [B, O, 1]
-        ).squeeze(-1)  # -> [B, O]
+        # Gather with masking
+        opt_logits = torch.zeros_like(opt_ids_tensor, dtype=torch.float32)  # [B, max_O]
+        opt_logits[mask] = expanded_logits[mask].gather(
+            -1,
+            opt_ids_tensor[mask].unsqueeze(-1)
+        ).squeeze(-1)
 
         # 5) Cross-entropy loss per row
         targets = torch.tensor(correct_idxs, device=device)  # [B]

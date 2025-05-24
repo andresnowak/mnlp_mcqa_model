@@ -9,7 +9,12 @@ import torch.nn.functional as F
 
 class MCQATrainer(Trainer):
     def compute_loss(
-        self, model: PreTrainedModel, tokenizer: PreTrainedTokenizerBase, inputs, return_outputs=False
+        self,
+        model: PreTrainedModel,
+        tokenizer: PreTrainedTokenizerBase,
+        inputs,
+        return_outputs=False,
+        num_items_in_batch=None,
     ):
         """
         For each prompt we run the model once, grab the final (next‐token)

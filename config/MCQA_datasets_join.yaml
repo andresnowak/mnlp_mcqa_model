@@ -1,0 +1,155 @@
+
+# Save options
+push_to_hub: true
+hub_dataset_name: "andresnowak/MNLP_MCQA_dataset"
+
+general:
+  stem_subsets: [
+      "abstract_algebra",
+      "anatomy",
+      "astronomy",
+      "college_biology",
+      "college_chemistry",
+      "college_computer_science",
+      "college_mathematics",
+      "college_physics",
+      "computer_security",
+      "conceptual_physics",
+      "electrical_engineering",
+      "elementary_mathematics",
+      "high_school_biology",
+      "high_school_chemistry",
+      "high_school_computer_science",
+      "high_school_mathematics",
+      "high_school_physics",
+      "high_school_statistics",
+      "machine_learning",
+  ]
+
+datasets:
+  - name: kz919/mmlu-auxiliary-train-auto-labelled
+    type: MCQA
+    config: default
+    split: train
+    source: hf
+    subset_name: mmlu-auxiliary-train-auto-labelled
+  - name: cais/mmlu
+    type: MCQA
+    config: all
+    split: validation
+    source: hf
+    subset_name: mmlu
+  - name: allenai/ai2_arc
+    type: MCQA
+    split: train
+    config: ARC-Easy
+    source: hf
+    subset_name: ai2_arc_easy
+  - name: allenai/ai2_arc
+    type: MCQA
+    split: validation
+    config: ARC-Easy
+    source: hf
+    subset_name: ai2_arc_easy
+  - name: allenai/ai2_arc
+    type: MCQA
+    split: test
+    config: ARC-Easy
+    source: hf
+    subset_name: ai2_arc_easy
+  - name: allenai/ai2_arc
+    type: MCQA
+    split: train
+    config: ARC-Challenge
+    source: hf
+    subset_name: ai2_arc_challenge
+  - name: allenai/ai2_arc
+    type: MCQA
+    split: validation
+    config: ARC-Challenge
+    source: hf
+    subset_name: ai2_arc_challenge
+  - name: allenai/ai2_arc
+    type: MCQA
+    split: test
+    config: ARC-Challenge
+    source: hf
+    subset_name: ai2_arc_challenge
+  - name: derek-thomas/ScienceQA
+    split: train
+    type: MCQA
+    config: default
+    source: hf
+    subset_name: ScienceQA
+  - name: derek-thomas/ScienceQA
+    split: validation
+    type: MCQA
+    config: default
+    source: hf
+    subset_name: ScienceQA
+  - name: allenai/math_qa
+    type: MCQA
+    config: default
+    split: train
+    source: hf
+    subset_name: math_qa
+  - name: allenai/math_qa
+    type: MCQA
+    config: default
+    split: validation
+    source: hf
+    subset_name: math_qa
+  - name: allenai/openbookqa
+    type: MCQA
+    config: additional
+    split: train
+    source: hf
+    subset_name: openbookqa
+  - name: allenai/openbookqa
+    type: MCQA
+    config: additional
+    split: validation
+    source: hf
+    subset_name: openbookqa
+  - name: allenai/openbookqa
+    type: MCQA
+    config: additional
+    split: test
+    source: hf
+    subset_name: openbookqa
+  - name: allenai/sciq
+    type: MCQA
+    config: default
+    split: train
+    source: hf
+    subset_name: sciq
+  - name: allenai/sciq
+    type: MCQA
+    config: default
+    split: validation
+    source: hf
+    subset_name: sciq
+  - name: allenai/sciq
+    type: MCQA
+    config: default
+    split: test
+    source: hf
+    subset_name: sciq
+  - name: openlifescienceai/medmcqa
+    type: MCQA
+    config: default
+    split: train
+    source: hf
+    subset_name: medmcqa
+  - name: openlifescienceai/medmcqa
+    type: MCQA
+    config: default
+    split: validation
+    source: hf
+    subset_name: medmcqa
+  - name: openlifescienceai/medmcqa
+    type: MCQA
+    config: default
+    split: test
+    source: hf
+    subset_name: medmcqa

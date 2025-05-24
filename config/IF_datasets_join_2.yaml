@@ -1,11 +1,11 @@
 # Save options
 push_to_hub: true
-hub_dataset_name: "andresnowak/Instruction-finetuning-mixture-mnlp"
+hub_dataset_name: "andresnowak/Instruction-finetuning-mixture-mnlp-with-nlp4education"
 
 datasets:
   - name: allenai/tulu-3-sft-mixture
     type: instruct
-    config: default 
+    config: default
     split: train
     source: hf
     columns_to_keep: ["id", "messages"]
@@ -29,7 +29,7 @@ datasets:
       'ai2-adapt-dev/tulu_v3.9_table_gpt_5k': 'tableGpt',
       'ai2-adapt-dev/tulu_v3.9_aya_100k': 'aya'}
     sources_to_exclude: [ "ai2-adapt-dev/coconot_converted", "ai2-adapt-dev/tulu_v3.9_wildjailbreak_decontaminated_50k", "ai2-adapt-dev/tulu_v3.9_synthetic_finalresp_wildguardmixtrain_decontaminated_50k",] # sources about alignment and jailbreaking
-  - name: data/mnlp_sft_data
+  - name: data/mnlp_sft_data # the dataset is local
     type: instruct
     config: default
     source: local

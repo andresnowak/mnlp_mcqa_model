@@ -22,19 +22,23 @@ def is_english(example):
 # This one is specfic to the allenai sft mixture
 def join_datasets(config):
     dataset_info = config["datasets"][0]
-    dataset_mnlp_info = config["datasets"][1]
+
+    if len(config["datasets"]) > 1:
+        dataset_mnlp_info = config["datasets"][1]
 
     dataset = load_dataset(
         dataset_info["name"],
         split=dataset_info.get("split", "train"),
     )
-    dataset_mnlp = load_from_disk(dataset_mnlp_info["name"])
+    if len(config["datasets"]) > 1:
+        dataset_mnlp = load_from_disk(dataset_mnlp_info["name"])
+
     sources_to_exclude = dataset_info["sources_to_exclude"] # because list is small it is faster than set
     filtered_dataset = dataset.filter(lambda x: x["source"] not in sources_to_exclude)
     print("Size after excluding sources: ", len(filtered_dataset))
     filtered_dataset = filtered_dataset.filter(lambda x: len(x["messages"]) == 2) # we only want instruction - answer
     print("Size of only content with 2 messages: ", len(filtered_dataset))
-    if config.get("only_english"):
+    if config.get("only_english", False):
         print("Only english data")
         filtered_dataset = filtered_dataset.filter(is_english, num_proc=8)
     print("Final size: ", len(filtered_dataset))
@@ -52,7 +56,8 @@ def join_datasets(config):
         if len(dataset_to_combine) != 0:
             datasets_to_combine[target_col] = dataset_to_combine
 
-    datasets_to_combine[dataset_mnlp_info["subset_name"]] = dataset_mnlp
+    if len(config["datasets"]) > 1:
+        datasets_to_combine[dataset_mnlp_info["subset_name"]] = dataset_mnlp
 
     return datasets_to_combine
 

@@ -1,7 +1,6 @@
 # Save options
 push_to_hub: true
-hub_dataset_name: "andresnowak/Instruction-finetuning-mixture-mnlp-only-english-with-nlp4education"
-only_english: True
+hub_dataset_name: "andresnowak/Instruction-finetuning-mixture-mnlp"
 
 datasets:
   - name: allenai/tulu-3-sft-mixture
@@ -30,8 +29,3 @@ datasets:
       'ai2-adapt-dev/tulu_v3.9_table_gpt_5k': 'tableGpt',
       'ai2-adapt-dev/tulu_v3.9_aya_100k': 'aya'}
     sources_to_exclude: [ "ai2-adapt-dev/coconot_converted", "ai2-adapt-dev/tulu_v3.9_wildjailbreak_decontaminated_50k", "ai2-adapt-dev/tulu_v3.9_synthetic_finalresp_wildguardmixtrain_decontaminated_50k",] # sources about alignment and jailbreaking
-  - name: data/mnlp_sft_data
-    type: instruct
-    config: default
-    source: local
-    subset_name: epflMnlpQuestionAnswer

@@ -1,0 +1,89 @@
+defaults:
+  - override hydra/job_logging: disabled
+
+environment:
+  seed: 42
+
+model:
+  name: andresnowak/Qwen3-0.6B-instruction-finetuned
+  hub_model_id: andresnowak/Qwen3-0.6B-instruction-finetuned-MCQA
+
+dataset_train:
+  - name: andresnowak/MNLP_MCQA_dataset
+    config: train
+    subset_name: math_qa
+  - name: andresnowak/MNLP_MCQA_dataset
+    subset_name: ScienceQA
+    config: train
+  - name: andresnowak/MNLP_MCQA_dataset
+    subset_name: mmlu-auxiliary-train-auto-labelled
+    config: train
+  - name: andresnowak/MNLP_MCQA_dataset
+    subset_name: ai2_arc_challenge
+    config: train
+  - name: andresnowak/MNLP_MCQA_dataset
+    subset_name: ai2_arc_easy
+    config: train
+  - name: andresnowak/MNLP_MCQA_dataset
+    subset_name: medmcqa
+    config: train
+  - name: andresnowak/MNLP_MCQA_dataset
+    subset_name: openbookqa
+    config: train
+  - name: andresnowak/MNLP_MCQA_dataset
+    subset_name: sciq
+    config: train
+
+dataset_validation:
+  - name: andresnowak/MNLP_MCQA_dataset
+    config: validation
+    subset_name: math_qa
+  - name: andresnowak/MNLP_MCQA_dataset
+    subset_name: ScienceQA
+    config: validation
+  - name: andresnowak/MNLP_MCQA_dataset
+    subset_name: mmlu
+    config: validation
+  - name: andresnowak/MNLP_MCQA_dataset
+    subset_name: ai2_arc_challenge
+    config: validation
+  - name: andresnowak/MNLP_MCQA_dataset
+    subset_name: ai2_arc_easy
+    config: validation
+  - name: andresnowak/MNLP_MCQA_dataset
+    subset_name: medmcqa
+    config: validation
+  - name: andresnowak/MNLP_MCQA_dataset
+    subset_name: openbookqa
+    config: validation
+  - name: andresnowak/MNLP_MCQA_dataset
+    subset_name: sciq
+    config: validation
+
+
+training:
+  output_dir: ./output
+  logging_dir: ./logs
+  resume_dir: None
+  report_to: wandb
+  learning_rate: 1e-5
+  per_device_train_batch_size: 8
+  per_device_eval_batch_size: 8
+  gradient_accumulation_steps: 8 # to get effective 64
+  num_train_epochs: 2
+  weight_decay: 0.00
+  warmup_ratio: 0.1
+  max_grad_norm: 0.4
+  linear_layers_max_grad_norm: 1.0
+
+wandb:
+  project: MNLP-qwen-instruction-finetuning
+  name: qwen-instruction-finetuning-MCQA
+
+
+# from datasets import interleave_datasets
+
+# mixture = interleave_datasets(
+#     [ds1, ds2, ds3],
+#     probabilities=[1.0, 1.0, 1.0]
+# )

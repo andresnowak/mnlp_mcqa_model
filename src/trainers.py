@@ -11,7 +11,6 @@ class MCQATrainer(Trainer):
     def compute_loss(
         self,
         model: PreTrainedModel,
-        tokenizer: PreTrainedTokenizerBase,
         inputs,
         return_outputs=False,
         num_items_in_batch=None,
@@ -20,7 +19,6 @@ class MCQATrainer(Trainer):
         For each prompt we run the model once, grab the final (next‐token)
         logits, index into the letter‐token IDs, and compute a CE loss.
         """
-        self.tokenizer = tokenizer
         device = model.device
         prompts = inputs["prompt"]  # List[str]
         correct_idxs = inputs["correct_idx"]  # List[int]
@@ -31,13 +29,13 @@ class MCQATrainer(Trainer):
 
         # Pre‐tokenize all option‐letters to single token IDs
         option_token_ids = [
-            [tokenizer(opt, add_special_tokens=False).input_ids[0] for opt in opts]
+            [self.tokenizer(opt, add_special_tokens=False).input_ids[0] for opt in opts]
             for opts in all_options
         ]
 
         for prompt, opt_ids, target in zip(prompts, option_token_ids, correct_idxs):
             # 1) encode prompt
-            enc = tokenizer(
+            enc = self.tokenizer(
                 prompt,
                 return_tensors="pt",
                 truncation=True,

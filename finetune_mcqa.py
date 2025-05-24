@@ -126,6 +126,9 @@ def train(cfg: DictConfig):
         ]
     )
 
+    raw_train_dataset = raw_train_dataset.shuffle(seed=cfg.environment.seed)
+    raw_val_dataset = raw_val_dataset.shuffle(seed=cfg.environment.seed)
+
     train_dataset = MCQADatasetClassification(raw_train_dataset, tokenizer)
     val_dataset = MCQADatasetClassification(raw_val_dataset, tokenizer)
 

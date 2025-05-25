@@ -56,6 +56,8 @@ def load_mmlu_datasets(name="cais/mmlu", split="test", subjects=["abstract_algeb
 
 def format_chat_messages(messages, tokenizer):
     formatted_text = ""
+
+    assert(len(messages) == 2)
     for message in messages:
         role = message.get("role", "").lower()
         content = message.get("content", "")
@@ -82,7 +84,15 @@ def tokenize_chat_function(examples, tokenizer):
         format_chat_messages(messages, tokenizer) for messages in examples["messages"]
     ]
 
-    return {"text": texts}
+    # return {"text": texts}
+
+    return tokenizer(
+        texts,
+        max_length=2048,
+        truncation=True,
+        padding="max_length",
+        return_tensors="pt",
+    )
 
 
 def get_wandb_id(cfg):
@@ -191,15 +201,21 @@ def train(cfg: DictConfig):
         )
         dataset_list.append(sampled_dataset)
 
+    # filter examples that have more than 20_000 characters, this will have more than 2048 tokens
+    def filter_long_examples(example):
+        # Format the messages to calculate total length
+        formatted_text = format_chat_messages(example["messages"], tokenizer)
+        return len(formatted_text) <= 20000
+
     raw_train_datasets = concatenate_datasets(dataset_list).shuffle(
         seed=cfg.environment.seed
-    )
+    ).filter(filter_long_examples, num_proc=10)
 
     # Tokenization with instruction formatting
     tokenized_dataset = raw_train_datasets.map(
         lambda x: tokenize_chat_function(x, tokenizer),
         batched=True,
-        num_proc=4,
+        num_proc=30,
     )
     split = tokenized_dataset.train_test_split(test_size=0.05)
 
@@ -257,7 +273,7 @@ def train(cfg: DictConfig):
         args=training_args,
         train_dataset=split["train"],
         eval_dataset=split["test"],
-        dataset_text_field="text",
+        # dataset_text_field="text",
         mmlu_datasets=mmlu_datasets,
         eval_dataset_name="training_validation_split",  # Name for your training data validation split
         # data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),

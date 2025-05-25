@@ -20,6 +20,8 @@ import os
 from unsloth import unsloth_train
 from datetime import datetime
 
+from src.trainers import IFSFTTrainer
+
 device = (
     "cuda"
     if torch.cuda.is_available()
@@ -39,6 +41,7 @@ def load_mmlu_datasets(name="cais/mmlu", split="test", subjects=["abstract_algeb
     num_samples_per_subject: Number of samples per subject for evaluation
     """
 
+    # so as to be able to see more finegrained evaluation (based on each type of subject)
     mmlu_datasets = {}
     for subject in subjects:
         try:
@@ -200,6 +203,11 @@ def train(cfg: DictConfig):
     )
     split = tokenized_dataset.train_test_split(test_size=0.05)
 
+    # load mmlu
+    mmlu_datasets = load_mmlu_datasets(
+        cfg.dataset_evaluation[0].name, cfg.dataset_evaluation[0].config, cfg.dataset_evaluation[0].subjects
+    )
+
     # ---- log -----
     total_batch_size = (
         cfg.training.per_device_train_batch_size
@@ -243,13 +251,15 @@ def train(cfg: DictConfig):
         hub_model_id=cfg.model.hub_model_id,
     )
 
-    trainer = SFTTrainer(
+    trainer = IFSFTTrainer(
         model=model,
         tokenizer=tokenizer,
         args=training_args,
         train_dataset=split["train"],
         eval_dataset=split["test"],
         dataset_text_field="text",
+        mmlu_datasets=mmlu_datasets,
+        eval_dataset_name="training_validation_split",  # Name for your training data validation split
         # data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
     )
 

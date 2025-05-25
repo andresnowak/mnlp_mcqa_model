@@ -6,6 +6,8 @@ from torch.utils.data import DataLoader
 from transformers import Trainer, PreTrainedModel, PreTrainedTokenizerBase
 import torch
 import torch.nn.functional as F
+import numpy as np
+from trl import SFTTrainer
 
 class MCQATrainer(Trainer):
     def compute_loss(
@@ -148,3 +150,105 @@ class MCQATrainer(Trainer):
         metrics = {"accuracy": overall_acc}
         metrics.update({f"accuracy_{ds}": acc for ds, acc in acc_by_ds.items()})
         return metrics
+    
+# ------ Instruction finetuning trainer -------
+
+
+def evaluate_mmlu_accuracy(model, tokenizer, mmlu_datasets, max_length=2048):
+    """
+    Evaluate model on MMLU datasets
+    """
+    model.eval()
+    results = {}
+    choice_tokens = [
+        tokenizer.encode(choice, add_special_tokens=False)[0]
+        for choice in ["A", "B", "C", "D"]
+    ]
+
+    for subject, dataset in mmlu_datasets.items():
+        correct = 0
+        total = 0
+
+        for example in dataset:
+            question = example["question"]
+            choices = example["choices"]
+            correct_answer = example["answer"]  # This should be 0, 1, 2, or 3
+
+            # Format the question
+            def format_mmlu_question(question, choices):
+                """Format MMLU question for evaluation"""
+                choice_labels = ["A", "B", "C", "D"]
+                formatted_choices = "\n".join(
+                    [f"{label}. {choice}" for label, choice in zip(choice_labels, choices)]
+                )
+
+                prompt = f"""Question: {question}\n{formatted_choices}\nAnswer: """
+                return prompt
+
+            prompt = format_mmlu_question(question, choices)
+
+            # Tokenize and get model prediction
+            inputs = tokenizer(
+                prompt, return_tensors="pt", truncation=True, max_length=max_length - 1
+            )
+            inputs = {k: v.to(model.device) for k, v in inputs.items()}
+
+            with torch.no_grad():
+                outputs = model(**inputs)
+                logits = outputs.logits[0, -1, :]  # Get last token logits, 
+                # NOTE: Even if the model would output something else, the idea is to see how possible is it that after Answer: the model would output A, B, C, D. Like maybe in the latent space the model still has the idea of what it has to choose, it i just first generating something before it answers (like if its planning what it has to say, and already has an idea of the answer)
+
+                # Get probabilities for A, B, C, D tokens
+                choice_logits = logits[choice_tokens]
+                predicted_choice = torch.argmax(choice_logits).item()
+
+                if predicted_choice == correct_answer:
+                    correct += 1
+                total += 1
+
+        accuracy = correct / total if total > 0 else 0
+        results[f"mmlu_{subject}_accuracy"] = accuracy
+        # logger.info(f"MMLU {subject} accuracy: {accuracy:.3f} ({correct}/{total})")
+
+    # Calculate overall MMLU accuracy
+    if results:
+        overall_accuracy = np.mean(list(results.values()))
+        results["mmlu_overall_accuracy"] = overall_accuracy
+        # logger.info(f"Overall MMLU accuracy: {overall_accuracy:.3f}")
+
+    model.train()
+    return results
+
+
+class IFSFTTrainer(SFTTrainer):
+    """Custom trainer that includes MMLU evaluation"""
+
+    def __init__(
+        self, *args, mmlu_datasets=None, eval_dataset_name="validation", **kwargs
+    ):
+        super().__init__(*args, **kwargs)
+        self.mmlu_datasets = mmlu_datasets or {}
+        self.eval_dataset_name = eval_dataset_name
+
+    def evaluate(self, eval_dataset=None, ignore_keys=None, metric_key_prefix="eval"):
+        """
+        Override evaluate to include MMLU evaluation
+        """
+        # Standard evaluation on training dataset split
+        eval_results = super().evaluate(eval_dataset, ignore_keys, metric_key_prefix)
+
+        # Add dataset-specific prefix
+        prefixed_results = {}
+        for key, value in eval_results.items():
+            new_key = key.replace("eval_", f"{self.eval_dataset_name}_")
+            prefixed_results[new_key] = value
+
+        # MMLU evaluation if datasets are provided
+        if self.mmlu_datasets:
+            mmlu_results = evaluate_mmlu_accuracy(
+                self.model, self.tokenizer, self.mmlu_datasets
+            )
+            prefixed_results.update(mmlu_results)
+
+        # Return all results - trainer will handle logging automatically
+        return prefixed_results

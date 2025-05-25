@@ -41,8 +41,117 @@
 
 ## Heuristics of how things work
 - First warmup ratio, at the beggining it is possible teh gradient norm will be zero becasue it will be scaled by a very small learning rate, but the computation are not wasted as Optimizers (e.g., Adam) still accumulate gradient statistics (mean/variance) during warmup, which are critical for later steps. But we won't be training on that part of the dataset, we are just computing the momentums for the optimizer.
-- With smaller models you can use bigger learning rates, as we have fewer parameters the gradients have less averaging acrros parameters, so they aere deterinistic
+- With smaller models you can use bigger learning rates, as we have fewer parameters the gradients have less averaging across parameters, so they are deterinistic
 
 
 ## Extra
 - Talks about the problem of normalizing gradient accumulation https://unsloth.ai/blog/gradient
+
+
+## Understanding the evaluation:
+
+1. Token-Level Processing (Simplified)
+Your prompt is tokenized into something like this (actual tokens depend on the tokenizer):
+
+["Question:", " What", " is", " 2", "+", "2", "?", " Choices:", "\nA", ")", " 3", "\nB", ")", " 4", ...]
+When evaluating choice A (A) 3):
+
+The model sees the full prompt up to \nA.
+
+It predicts the next token (which should be ")").
+
+Then predicts the token after that (which should be " 3").
+
+The key: It computes log probabilities for each required token in the choice sequence.
+
+2. Scoring Choice A (A) 3)
+Here’s how the model "scores" this choice internally:
+
+Prompt Context:
+
+"Question: What is 2+2?\nChoices:\nA"
+Model generates logits for the next token (should be ")").
+
+Logprob of ")" = -0.2 (example).
+
+Next Token:
+
+"Question: ... Choices:\nA)"
+Now predicts the next token after ")" (should be " 3").
+
+Logprob of " 3" = -1.0.
+
+Total Logprob for Choice A:
+
+logprob_A = logprob(")") + logprob(" 3") = -0.2 + (-1.0) = -1.2
+3. Comparing All Choices
+Repeat this for all options:
+
+Choice	Tokens to Predict	Example Logprobs	Total Logprob
+A) 3	")", " 3"	-0.2 + -1.0	-1.2
+B) 4	")", " 4"	-0.2 + -0.1	-0.3
+C) 5	")", " 5"	-0.2 + -1.9	-2.1
+D) 6	")", " 6"	-0.2 + -1.6	-1.8
+Winner: B) 4 (highest total logprob = -0.3).
+
+4. Why This Works
+No Generation: The model never outputs ") 3"—it just scores how likely those tokens are to follow the prompt.
+
+Token-by-Token: Logprobs are additive across the sequence of tokens in each choice.
+
+Answer Selection: The choice with the highest sum of logprobs wins.
+
+5. Key Clarifications
+Q: Does the model "see" other choices while scoring one?
+No. Each choice (A) 3, B) 4, etc.) is scored independently as a continuation of the same base prompt.
+
+Q: What if the choice is longer (e.g., "A) The number four")?
+The model would score all tokens in the continuation:
+")", " The", " number", " four" → sum their logprobs.
+
+Normalization (_norm_nospace) divides by token count to avoid length bias.
+
+Q: How is this different from generation?
+Generation: Model freely produces tokens (e.g., "The answer is B)").
+
+Logprob Scoring: Model silently evaluates how likely predefined tokens (like " 4") are to appear next.
+
+6. Practical Implications
+Efficiency: Faster than text generation (no decoding loop).
+
+Accuracy: More reliable than parsing generated text (avoids formatting issues).
+
+Reproducibility: Deterministic if the model and prompt are fixed.
+
+Example Code (Pseudocode)
+python
+base_prompt = "Question: What is 2+2?\nChoices:\n"
+choices = ["A) 3", "B) 4", "C) 5", "D) 6"]
+
+scores = []
+for choice in choices:
+    input_text = base_prompt + choice
+    input_ids = tokenizer.encode(input_text, return_tensors="pt")
+    
+    # Get logprobs for each token in the choice
+    with torch.no_grad():
+        outputs = model(input_ids)
+        logits = outputs.logits
+    
+    # Calculate logprob for each token in the choice (simplified)
+    choice_logprob = 0
+    for i in range(len(input_ids[0]) - 1):
+        token_logprob = logits[0, i, input_ids[0, i+1]].item()  # Logprob of next token
+        choice_logprob += token_logprob
+    
+    scores.append(choice_logprob)
+
+best_choice = choices[torch.argmax(torch.tensor(scores))]  # "B) 4"
+Summary
+The model scores each choice token-by-token as a continuation of the prompt.
+
+It sums logprobs for all tokens in a choice (e.g., ")" + " 4" for B) 4).
+
+The highest sum wins—no text generation needed.
+
+This is why generation_size=-1 is optimal for multiple-choice QA! Let me know if you'd like to dive deeper into tokenization or normalization. 🚀

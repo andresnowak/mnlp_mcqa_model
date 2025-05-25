@@ -55,6 +55,8 @@ def MMLU(data: Dataset, data_info: dict, stem_subsets: list[str]):
 def ai2_arc(data: Dataset, data_info: dict):
     arc_easy_data_validation = []
 
+    answer_map = {"1": "A", "2": "B", "3": "C", "4": "D", "A": "A", "B": "B", "C": "C", "D": "D", "E": "E"} # some choices have level 1 to 4 and some A to E
+
     for data_point in data:
         arc_easy_data_validation.append(
             {
@@ -62,7 +64,7 @@ def ai2_arc(data: Dataset, data_info: dict):
                 "id": f"{data_info['subset_name']}_{data_point['id']}",
                 "question": data_point["question"],
                 "choices": data_point["choices"]["text"],
-                "answer": data_point["answerKey"],
+                "answer": answer_map[data_point["answerKey"]],
                 "context": None,
             }
         )

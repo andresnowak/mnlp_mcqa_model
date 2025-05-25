@@ -10,13 +10,15 @@ from transformers import (
 )
 from trl import SFTTrainer, SFTConfig
 import torch
-from datasets import load_dataset
+from datasets import load_dataset, concatenate_datasets
 from torch.optim.lr_scheduler import LinearLR
 import logging
 import transformers
 import sys
 import datasets
 import os
+from unsloth import unsloth_train
+from datetime import datetime
 
 device = (
     "cuda"
@@ -27,6 +29,26 @@ device = (
 )
 print(f"Available gpus {torch.cuda.device_count()}")
 logger = logging.getLogger(__name__)
+
+# ------------------------
+
+def load_mmlu_datasets(name="cais/mmlu", split="test", subjects):
+    """
+    Load MMLU evaluation datasets
+    subjects: List of MMLU subjects to evaluate on, or None for all
+    num_samples_per_subject: Number of samples per subject for evaluation
+    """
+
+    mmlu_datasets = {}
+    for subject in subjects:
+        try:
+            dataset = load_dataset(name, subject, split=split)
+            mmlu_datasets[subject] = dataset
+            logger.info(f"Loaded {len(dataset)} samples for MMLU subject: {subject}")
+        except Exception as e:
+            logger.warning(f"Failed to load MMLU subject {subject}: {e}")
+
+    return mmlu_datasets
 
 
 def format_chat_messages(messages, tokenizer):
@@ -40,9 +62,10 @@ def format_chat_messages(messages, tokenizer):
         elif role == "assistant":
             formatted_text += f"{content}\n\n"
         else:
-            # Handle any other roles
-            pass
-        formatted_text += tokenizer.eos_token # add eos_token so it doesn't go on forever
+            raise ValueError
+        formatted_text += (
+            tokenizer.eos_token
+        )  # add eos_token so it doesn't go on forever
 
     return formatted_text.strip()
 
@@ -52,17 +75,11 @@ def tokenize_chat_function(examples, tokenizer):
     Tokenize chat-based examples where each example has a 'messages' field
     containing a list of message dictionaries.
     """
-    texts = [format_chat_messages(messages, tokenizer) for messages in examples["messages"]]
+    texts = [
+        format_chat_messages(messages, tokenizer) for messages in examples["messages"]
+    ]
 
     return {"text": texts}
-
-    # return tokenizer(
-    #     texts,
-    #     truncation=True,
-    #     padding="max_length",
-    #     max_length=2048,  # we are forced to use this max length
-    #     # return_tensors="pt",
-    # )
 
 
 def get_wandb_id(cfg):
@@ -79,7 +96,7 @@ def get_wandb_id(cfg):
     return wandb_id, resume_mode
 
 
-@hydra.main(config_path="config", config_name="IF-config_sweep.yml", version_base="1.1")
+@hydra.main(config_path="config", config_name="IF-config.yml", version_base="1.1")
 def train(cfg: DictConfig):
     # Resume from checkpoint
     # Look for a latest checkpoint in the output directory
@@ -110,7 +127,7 @@ def train(cfg: DictConfig):
         id=wandb_id[0],
         resume=wandb_id[1],
         project=cfg.wandb.project,
-        name=cfg.wandb.name,
+        name=f"{cfg.wandb.name}_{datetime.now().strftime('%Y-%m-%d')}",
         config=OmegaConf.to_container(cfg, resolve=True),  # export all cfg to wandb)
     )
     wandb_id_path = os.path.join(cfg.training.output_dir, "wandb_run_id.txt")
@@ -127,15 +144,6 @@ def train(cfg: DictConfig):
         ]
         cfg.training.num_train_epochs = wandb.config["training"]["num_train_epochs"]
         cfg.training.weight_decay = wandb.config["training"]["weight_decay"]
-
-    # Load dataset with subset for sweeps
-    raw_train_datasets = load_dataset(
-        cfg.dataset[0].name, cfg.dataset[0].config, split="train"
-    ).shuffle(seed=cfg.environment.seed)
-
-    # Then select the number of samples you want from the shuffled dataset
-    if cfg.dataset[0].get("samples"):
-        raw_train_datasets = raw_train_datasets.select(range(cfg.dataset[0].samples))
 
     # Model
     model, tokenizer = FastLanguageModel.from_pretrained(
@@ -160,6 +168,21 @@ def train(cfg: DictConfig):
     tokenizer.padding_side = "left"  # Critical for Flash Attention compatibility (It seems Qwen3 Flash attention needs this <pad> value, instead of value <pad>)
     tokenizer.max_length = 2048
 
+
+    # Load datasets
+    raw_train_datasets = concatenate_datasets(
+        [
+            load_dataset(dataset["name"], dataset["config"], split="train")
+            .shuffle(cfg.environment.seed)
+            .take(int(dataset["size"] * 100))
+            for dataset in cfg.dataset
+        ]
+    ).shuffle(seed=cfg.environment.seed)
+
+    # Then select the number of samples you want from the shuffled dataset
+    # if cfg.dataset[0].get("samples"):
+    #     raw_train_datasets = raw_train_datasets.select(range(cfg.dataset[0].samples))
+
     # Tokenization with instruction formatting
     tokenized_dataset = raw_train_datasets.map(
         lambda x: tokenize_chat_function(x, tokenizer),
@@ -167,6 +190,24 @@ def train(cfg: DictConfig):
         num_proc=4,
     )
     split = tokenized_dataset.train_test_split(test_size=0.05)
+
+    ## log
+    total_batch_size = (
+        cfg.training.per_device_train_batch_size
+        * cfg.training.gradient_accumulation_steps
+    )
+    logger.info("***** Running training *****")
+    logger.info(f"  Num examples = {len(split['train'])}")
+    logger.info(f"  Num Epochs = {cfg.training.num_train_epochs}")
+    logger.info(
+        f"  Instantaneous batch size per device = {cfg.training.per_device_train_batch_size}"
+    )
+    logger.info(
+        f"  Total train batch size (w. parallel, distributed & accumulation) = {total_batch_size}"
+    )
+    logger.info(
+        f"  Gradient Accumulation steps = {cfg.training.gradient_accumulation_steps}"
+    )
 
     # Training setup
     training_args = SFTConfig(
@@ -190,7 +231,7 @@ def train(cfg: DictConfig):
         lr_scheduler_type="linear",
         seed=cfg.environment.seed,
         push_to_hub=True,
-        hub_model_id=cfg.model.hub_model_id
+        hub_model_id=cfg.model.hub_model_id,
     )
 
     trainer = SFTTrainer(
@@ -199,12 +240,18 @@ def train(cfg: DictConfig):
         args=training_args,
         train_dataset=split["train"],
         eval_dataset=split["test"],
-        dataset_text_field = "text",
+        dataset_text_field="text",
         # data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
     )
 
-    trainer.train(resume_from_checkpoint=last_checkpoint)
+    # trainer.train(resume_from_checkpoint=last_checkpoint)
+    unsloth_train(
+        trainer, resume_from_checkpoint=last_checkpoint
+    )  # use unsloth to have the fix of the gradient accumulation
     wandb.finish()
+
+    # Push final model
+    trainer.push_to_hub()
 
 
 if __name__ == "__main__":

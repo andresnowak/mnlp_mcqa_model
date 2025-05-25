@@ -27,7 +27,7 @@ training:
   gradient_accumulation_steps: 16 # to get effective 128
   num_train_epochs: 2
   weight_decay: 0.00
-  warmup_ratio: 0.3
+  warmup_ratio: 0.03
   max_grad_norm: 1.0
   linear_layers_max_grad_norm: 1.0
 

@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 # ------------------------
 
-def load_mmlu_datasets(name="cais/mmlu", split="test", subjects):
+def load_mmlu_datasets(name="cais/mmlu", split="test", subjects=["abstract_algebra"]):
     """
     Load MMLU evaluation datasets
     subjects: List of MMLU subjects to evaluate on, or None for all
@@ -114,7 +114,7 @@ def train(cfg: DictConfig):
         datefmt="%Y-%m-%d %H:%M:%S",
         handlers=[logging.StreamHandler(sys.stdout)],
     )
-    log_level = 1
+    log_level = logging.INFO
     logger.setLevel(log_level)
     datasets.utils.logging.set_verbosity(log_level)
     transformers.utils.logging.set_verbosity(log_level)
@@ -169,19 +169,28 @@ def train(cfg: DictConfig):
     tokenizer.max_length = 2048
 
 
-    # Load datasets
-    raw_train_datasets = concatenate_datasets(
-        [
-            load_dataset(dataset["name"], dataset["config"], split="train")
-            .shuffle(cfg.environment.seed)
-            .take(int(dataset["size"] * 100))
-            for dataset in cfg.dataset
-        ]
-    ).shuffle(seed=cfg.environment.seed)
+    # ---- Load training dataset ----- 
+    dataset_list = []
+    for dataset in cfg.dataset:
+        # Load the full dataset first
+        full_dataset = load_dataset(dataset["name"], dataset["config"], split="train")
+        dataset_length = len(full_dataset)
 
-    # Then select the number of samples you want from the shuffled dataset
-    # if cfg.dataset[0].get("samples"):
-    #     raw_train_datasets = raw_train_datasets.select(range(cfg.dataset[0].samples))
+        # Calculate number of samples to take (percentage of total)
+        num_samples = int(dataset["size"] * dataset_length)
+        logger.info(
+            f"Taking {num_samples} samples ({dataset['size'] * 100:.1f}%) from {dataset['name']} (total: {dataset_length})"
+        )
+
+        # Shuffle and take the specified percentage
+        sampled_dataset = full_dataset.shuffle(cfg.environment.seed).select(
+            range(min(num_samples, dataset_length))
+        )
+        dataset_list.append(sampled_dataset)
+
+    raw_train_datasets = concatenate_datasets(dataset_list).shuffle(
+        seed=cfg.environment.seed
+    )
 
     # Tokenization with instruction formatting
     tokenized_dataset = raw_train_datasets.map(
@@ -191,7 +200,7 @@ def train(cfg: DictConfig):
     )
     split = tokenized_dataset.train_test_split(test_size=0.05)
 
-    ## log
+    # ---- log -----
     total_batch_size = (
         cfg.training.per_device_train_batch_size
         * cfg.training.gradient_accumulation_steps

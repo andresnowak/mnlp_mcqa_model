@@ -27,7 +27,7 @@ general:
   ]
 
 datasets:
-  - name: kz919/mmlu-auxiliary-train-auto-labelled
+  - name: kz919/mmlu-auxiliary-train-auto-labelled ## This datasets come form the auxiliary train subset of cais/mmlu in reallity they just added the auto-labels to this examples
     type: MCQA
     config: default
     split: train

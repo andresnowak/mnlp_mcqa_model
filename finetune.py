@@ -90,7 +90,7 @@ def tokenize_chat_function(examples, tokenizer):
         texts,
         max_length=2048,
         truncation=True,
-        padding="max_length",
+        padding="longest",
         return_tensors="pt",
     )
 
@@ -201,11 +201,11 @@ def train(cfg: DictConfig):
         )
         dataset_list.append(sampled_dataset)
 
-    # filter examples that have more than 20_000 characters, this will have more than 2048 tokens
+    # filter examples, this will have more than 2048 tokens
     def filter_long_examples(example):
         # Format the messages to calculate total length
         formatted_text = format_chat_messages(example["messages"], tokenizer)
-        return len(formatted_text) <= 20000
+        return len(formatted_text) <= 15_000
 
     raw_train_datasets = concatenate_datasets(dataset_list).shuffle(
         seed=cfg.environment.seed

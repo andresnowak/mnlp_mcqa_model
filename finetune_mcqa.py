@@ -17,6 +17,8 @@ import transformers
 import sys
 import datasets
 import os
+from unsloth import unsloth_train
+# unsloth_train fixes gradient_accumulation_steps
 
 from src.trainers import MCQATrainer
 from src.custom_datasets import MCQADatasetClassification
@@ -188,8 +190,9 @@ def train(cfg: DictConfig):
         eval_dataset=val_dataset,
         data_collator=mcqa_collatefn,
     )
-
-    trainer.train(resume_from_checkpoint=last_checkpoint)
+    
+    # trainer.train(resume_from_checkpoint=last_checkpoint)
+    unsloth_train(trainer, resume_from_checkpoint=last_checkpoint)
     wandb.finish()
 
     # Push final model

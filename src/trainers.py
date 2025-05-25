@@ -20,55 +20,57 @@ class MCQATrainer(Trainer):
         logits, index into the letter‐token IDs, and compute a CE loss.
         """
         device = model.device
-        prompts = inputs["prompt"]  # List[str]
+        prompts = inputs["prompt"]
         correct_idxs = inputs["correct_idx"]  # List[int]
         all_options = inputs["options"]  # List[List[str]]
 
-        # 1. Pre-tokenize options and find max options per sample
+        # Check for empty options
+
+        assert all(len(opts) > 0 for opts in all_options), "Empty options list found"
+
+        # Verify correct indices are within bounds
+        for idx, (opts, target) in enumerate(zip(all_options, correct_idxs)):
+            assert 0 <= target < len(opts), (
+                f"Invalid target {target} for {len(opts)} options in sample {idx}"
+            )
+        
+        # 1. Tokenize all options and create mask
         option_token_ids = []
-        max_options = max(len(opts) for opts in all_options)
-
+        option_mask = []
         for opts in all_options:
-            # Get first token ID for each option
-            opt_ids = [
-                self.tokenizer(opt, add_special_tokens=False).input_ids[0] for opt in opts
-            ]
-            # Pad with -100 (ignored by CE loss) if fewer options than max
-            padded = opt_ids + [-100] * (max_options - len(opt_ids))
-            option_token_ids.append(padded)
-
-        # 1) Batch encode prompts
-        enc = self.tokenizer(
-            prompts,
-            return_tensors="pt",
-            truncation=True,
-            padding=True,
-            max_length=2048,
-        ).to(device)
-
-        # 2) Forward pass over the full batch
-        outputs = model(**enc)  # logits: [B, seq_len, V]
+            ids = [self.tokenizer(opt, add_special_tokens=False).input_ids[0] for opt in opts]
+            option_token_ids.append(ids)
+            option_mask.append([1] * len(ids))  # 1 = real option
+        
+        # 2. Pad options and masks
+        max_options = max(len(x) for x in option_token_ids)
+        padded_ids = [ids + [0]*(max_options - len(ids)) for ids in option_token_ids]
+        padded_mask = [mask + [0]*(max_options - len(mask)) for mask in option_mask]
+        
+        # Convert to tensors
+        opt_ids_tensor = torch.tensor(padded_ids, device=device)  # [B, max_O]
+        opt_mask = torch.tensor(padded_mask, dtype=torch.bool, device=device)  # [B, max_O]
+        
+        # 3. Forward pass (batched)
+        enc = self.tokenizer(prompts, return_tensors="pt", padding=True).to(device)
+        outputs = model(**enc)
         last_logits = outputs.logits[:, -1, :]  # [B, V]
-
-        # 3) Convert option_token_ids to tensor [B, O]
-        opt_ids_tensor = torch.tensor(option_token_ids, device=device)  # [B, O]
-        mask = opt_ids_tensor != -100  # [B, max_O], True for valid options
-
-        expanded_logits = last_logits.unsqueeze(1).expand(-1, max_options, -1)
-
-        # 4) Gather logits at option token positions
-        # This gives [B, O]
-        # Gather with masking
-        opt_logits = torch.zeros_like(opt_ids_tensor, dtype=torch.float32)  # [B, max_O]
-        opt_logits[mask] = expanded_logits[mask].gather(
-            -1,
-            opt_ids_tensor[mask].unsqueeze(-1)
-        ).squeeze(-1)
-
-        # 5) Cross-entropy loss per row
-        targets = torch.tensor(correct_idxs, device=device)  # [B]
-        loss = F.cross_entropy(opt_logits, targets)  # this will average over batch by default
-
+        
+        # 4. Extract option logits WITHOUT gather
+        # Index directly using advanced indexing
+        batch_idx = torch.arange(len(prompts), device=device)[:, None]  # [B, 1]
+        opt_logits = last_logits[batch_idx, opt_ids_tensor]  # [B, max_O]
+        
+        # 5. Apply mask by setting invalid options to -inf
+        opt_logits = opt_logits.masked_fill(~opt_mask, -float('inf'))
+        
+        # 6. Compute loss (automatically ignores -inf)
+        loss = F.cross_entropy(
+            opt_logits,
+            torch.tensor(correct_idxs, device=device),
+            ignore_index=-100  # Redundant with -inf but safer
+        )
+        
         return (loss, opt_logits) if return_outputs else loss
 
     def get_train_dataloader(self) -> DataLoader:

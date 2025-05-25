@@ -12,43 +12,46 @@ model:
 dataset:
   - name: andresnowak/Instruction-finetuning-mixture-mnlp
     config: codeAlpaca
-    size: 0.8
+    size: 0.4
   - name: andresnowak/Instruction-finetuning-mixture-mnlp
     config: noRobots
-    size: 0.6
+    size: 0.8
   - name: andresnowak/Instruction-finetuning-mixture-mnlp
     config: openMathGsm8k
-    size: 0.8
+    size: 0.6
   - name: andresnowak/Instruction-finetuning-mixture-mnlp
     config: codeV2
-    size: 0.8
+    size: 0.5
   - name: andresnowak/Instruction-finetuning-mixture-mnlp
     config: flanV2
-    size: 0.7
+    size: 0.6
   - name: andresnowak/Instruction-finetuning-mixture-mnlp
     config: ifData
     size: 0.6
   - name: andresnowak/Instruction-finetuning-mixture-mnlp
     config: mathAlgebra 
-    size: 1.0
+    size: 0.6
   - name: andresnowak/Instruction-finetuning-mixture-mnlp
     config: mathGrade
-    size: 0.7
+    size: 0.5
   - name: andresnowak/Instruction-finetuning-mixture-mnlp
     config: oasst1
     size: 0.5
   - name: andresnowak/Instruction-finetuning-mixture-mnlp
     config: sciriff
-    size: 0.5
+    size: 0.8
   - name: andresnowak/Instruction-finetuning-mixture-mnlp
     config: tableGpt
-    size: 0.4
+    size: 0.3
   - name: andresnowak/Instruction-finetuning-mixture-mnlp
     config: tirMath
-    size: 0.8
+    size: 0.5
   - name: andresnowak/Instruction-finetuning-mixture-mnlp
     config: wildChat
     size: 0.5
+  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+    config: mathV5
+    size: 0.2
 
 dataset_evaluation:
   - name: cais/mmlu

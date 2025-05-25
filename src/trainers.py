@@ -154,7 +154,7 @@ class MCQATrainer(Trainer):
     
 # ------ Instruction finetuning trainer -------
 
-
+# Note simple evaluation method where we grab the last logit and we only see the logits of the choice letters, and then we just do argmax and compare if chosen token is the same as the correct answer for accuracy
 def evaluate_mmlu_accuracy(
     model, tokenizer, mmlu_datasets, max_length=2048, metric_key_prefix="eval"
 ):

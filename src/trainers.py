@@ -8,6 +8,7 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 from trl import SFTTrainer
+from tqdm import tqdm
 
 class MCQATrainer(Trainer):
     def compute_loss(
@@ -165,11 +166,14 @@ def evaluate_mmlu_accuracy(model, tokenizer, mmlu_datasets, max_length=2048):
         for choice in ["A", "B", "C", "D"]
     ]
 
-    for subject, dataset in mmlu_datasets.items():
+    subject_pbar = tqdm(mmlu_datasets.items(), desc="MMLU Subjects", leave=False)
+    for subject, dataset in subject_pbar:
+        subject_pbar.set_postfix({"subject": subject[:20] + "..."})
         correct = 0
         total = 0
 
-        for example in dataset:
+        example_pbar = tqdm(dataset, desc="Evaluating", leave=False)
+        for example in example_pbar:
             question = example["question"]
             choices = example["choices"]
             correct_answer = example["answer"]  # This should be 0, 1, 2, or 3
@@ -205,10 +209,14 @@ def evaluate_mmlu_accuracy(model, tokenizer, mmlu_datasets, max_length=2048):
                 if predicted_choice == correct_answer:
                     correct += 1
                 total += 1
+    
+            example_pbar.set_postfix(
+                {"acc": f"{correct / total:.1%}" if total else "0%"}
+            )
 
         accuracy = correct / total if total > 0 else 0
         results[f"mmlu_{subject}_accuracy"] = accuracy
-        # logger.info(f"MMLU {subject} accuracy: {accuracy:.3f} ({correct}/{total})")
+        subject_pbar.set_postfix({"curr_acc": f"{accuracy:.1%}"})
 
     # Calculate overall MMLU accuracy
     if results:
@@ -250,5 +258,8 @@ class IFSFTTrainer(SFTTrainer):
             )
             prefixed_results.update(mmlu_results)
 
+        eval_results.update(prefixed_results)
+        self.log(eval_results)
+
         # Return all results - trainer will handle logging automatically
-        return prefixed_results
+        return eval_results

@@ -47,7 +47,6 @@ evaluate==0.4.3
 executing==2.1.0
 fastjsonschema==2.21.1
 filelock==3.17.0
-flash_attn==2.7.4.post1
 fonttools==4.55.8
 fqdn==1.5.1
 frozenlist==1.5.0
@@ -220,6 +219,7 @@ torch-geometric==2.6.1
 torchaudio==2.5.1
 torchsummary==1.5.1
 torchvision==0.20.1
+flash_attn==2.7.4.post1
 tornado==6.4.2
 tqdm==4.67.1
 traitlets==5.14.3

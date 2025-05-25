@@ -155,7 +155,9 @@ class MCQATrainer(Trainer):
 # ------ Instruction finetuning trainer -------
 
 
-def evaluate_mmlu_accuracy(model, tokenizer, mmlu_datasets, max_length=2048):
+def evaluate_mmlu_accuracy(
+    model, tokenizer, mmlu_datasets, max_length=2048, metric_key_prefix="eval"
+):
     """
     Evaluate model on MMLU datasets
     """
@@ -215,13 +217,13 @@ def evaluate_mmlu_accuracy(model, tokenizer, mmlu_datasets, max_length=2048):
             )
 
         accuracy = correct / total if total > 0 else 0
-        results[f"mmlu_{subject}_accuracy"] = accuracy
+        results[f"{metric_key_prefix}_mmlu_{subject}_accuracy"] = accuracy
         subject_pbar.set_postfix({"curr_acc": f"{accuracy:.1%}"})
 
     # Calculate overall MMLU accuracy
     if results:
         overall_accuracy = np.mean(list(results.values()))
-        results["mmlu_overall_accuracy"] = overall_accuracy
+        results[f"{metric_key_prefix}_mmlu_overall_accuracy"] = overall_accuracy
         # logger.info(f"Overall MMLU accuracy: {overall_accuracy:.3f}")
 
     model.train()
@@ -245,20 +247,13 @@ class IFSFTTrainer(SFTTrainer):
         # Standard evaluation on training dataset split
         eval_results = super().evaluate(eval_dataset, ignore_keys, metric_key_prefix)
 
-        # Add dataset-specific prefix
-        prefixed_results = {}
-        for key, value in eval_results.items():
-            new_key = key.replace("eval_", f"{self.eval_dataset_name}_")
-            prefixed_results[new_key] = value
-
         # MMLU evaluation if datasets are provided
         if self.mmlu_datasets:
             mmlu_results = evaluate_mmlu_accuracy(
                 self.model, self.tokenizer, self.mmlu_datasets
             )
-            prefixed_results.update(mmlu_results)
 
-        eval_results.update(prefixed_results)
+        eval_results.update(mmlu_results)
         self.log(eval_results)
 
         # Return all results - trainer will handle logging automatically

@@ -1,0 +1,73 @@
+push_to_hub: true
+hub_dataset_name: "andresnowak/MNLP_M2_mcqa_dataset"
+
+datasets:
+  - name: andresnowak/MNLP_MCQA_dataset
+    config: [train, validation]
+    subset_name: math_qa
+  - name: andresnowak/MNLP_MCQA_dataset
+    subset_name: ScienceQA
+    config: [train, validation, test]
+  - name: andresnowak/MNLP_MCQA_dataset
+    subset_name: mmlu-auxiliary-train-auto-labelled
+    config: [train]
+  - name: andresnowak/MNLP_MCQA_dataset
+    subset_name: ai2_arc_challenge
+    config: [train, validation, test]
+  - name: andresnowak/MNLP_MCQA_dataset
+    subset_name: ai2_arc_easy
+    config: [train, validation, test]
+  - name: andresnowak/MNLP_MCQA_dataset
+    subset_name: medmcqa
+    config: [train, validation, test]
+  - name: andresnowak/MNLP_MCQA_dataset
+    subset_name: openbookqa
+    config: [train, validation, test]
+  - name: andresnowak/MNLP_MCQA_dataset
+    subset_name: sciq
+    config: [train, validation, test]
+  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+    subset_name: aya
+    config: [train]
+  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+    subset_name: codeAlpaca
+    config: [train]
+  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+    subset_name: codeV2
+    config: [train]
+  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+    subset_name: flanV2
+    config: [train]
+  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+    subset_name: ifData
+    config: [train]
+  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+    subset_name: mathAlgebra
+    config: [train]
+  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+    subset_name: mathGrade
+    config: [train]
+  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+    subset_name: mathV5
+    config: [train]
+  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+    subset_name: noRobots
+    config: [train]
+  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+    subset_name: oasst1
+    config: [train]
+  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+    subset_name: openMathGsm8k
+    config: [train]
+  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+    subset_name: sciriff
+    config: [train]
+  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+    subset_name: tableGpt
+    config: [train]
+  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+    subset_name: tirMath
+    config: [train]
+  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+    subset_name: wildChat
+    config: [train]

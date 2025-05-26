@@ -5,8 +5,9 @@ environment:
   seed: 42
 
 model:
-  name: andresnowak/Qwen3-0.6B-instruction-finetuned
-  hub_model_id: andresnowak/Qwen3-0.6B-instruction-finetuned-MCQA
+  # name: andresnowak/Qwen3-0.6B-instruction-finetuned
+  name: Qwen/Qwen3-0.6B-Base
+  hub_model_id: andresnowak/Qwen3-0.6B-MNLP_M2_mcqa_model
 
 dataset_train:
   - name: andresnowak/MNLP_MCQA_dataset

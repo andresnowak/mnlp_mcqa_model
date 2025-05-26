@@ -1,7 +1,6 @@
 import unsloth
 from unsloth import FastLanguageModel
 import hydra
-from datetime import datetime
 from omegaconf import DictConfig, OmegaConf
 import wandb
 from transformers import (
@@ -89,7 +88,7 @@ def train(cfg: DictConfig):
         id=wandb_id[0],
         resume=wandb_id[1],
         project=cfg.wandb.project,
-        name=f"{cfg.wandb.name}_{datetime.now().strftime('%Y-%m-%d')}",
+        name=cfg.wandb.name,
         config=OmegaConf.to_container(cfg, resolve=True),  # export all cfg to wandb)
     )
     wandb_id_path = os.path.join(cfg.training.output_dir, "wandb_run_id.txt")
@@ -132,15 +131,13 @@ def train(cfg: DictConfig):
     def datasets_with_4_options(example):
         return len(example["choices"]) == 4
 
-    raw_train_dataset.filter(
+    raw_train_dataset = raw_train_dataset.filter(
         lambda x: datasets_with_4_options(x),
-        batched=True,
-        num_proc=30,
+        num_proc=10,
     )
-    raw_val_dataset.filter(
+    raw_val_dataset = raw_val_dataset.filter(
         lambda x: datasets_with_4_options(x),
-        batched=True,
-        num_proc=30,
+        num_proc=10,
     )
 
     raw_train_dataset = raw_train_dataset.shuffle(seed=cfg.environment.seed)
@@ -205,7 +202,7 @@ def train(cfg: DictConfig):
         eval_dataset=val_dataset,
         data_collator=mcqa_collatefn,
     )
-    
+
     # trainer.train(resume_from_checkpoint=last_checkpoint)
     unsloth_train(trainer, resume_from_checkpoint=last_checkpoint)
     wandb.finish()

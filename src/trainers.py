@@ -85,7 +85,7 @@ class MCQATrainer(Trainer):
         dataloader_params = {"batch_size": self.args.eval_batch_size, "collate_fn": self.data_collator}
         return DataLoader(eval_dataset, **dataloader_params)
 
-    def evaluate(self, ignore_keys=None):
+    def evaluate(self, ignore_keys=None, metric_key_prefix="eval"):
         model = self.model
         model.eval()
         dataloader = self.get_eval_dataloader(self.eval_dataset)
@@ -151,8 +151,8 @@ class MCQATrainer(Trainer):
         overall_acc = overall_correct / overall_total if overall_total > 0 else 0.0
 
         # return as metrics dict
-        metrics = {"eval_accuracy": overall_acc}
-        metrics.update({f"eval_accuracy_{ds}": acc for ds, acc in acc_by_ds.items()})
+        metrics = {f"{metric_key_prefix}_accuracy": overall_acc}
+        metrics.update({f"{metric_key_prefix}_accuracy_{ds}": acc for ds, acc in acc_by_ds.items()})
         self.log(metrics)
         return metrics
     

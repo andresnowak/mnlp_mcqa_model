@@ -1,0 +1,10 @@
+Source Material:
+"{{ context }}"
+
+Regarding the source material, which statement answers: {{ question_text }}?
+
+{% for choice_text in choices_list %}
+Selection {{ loop.index }}: {{ choice_text }}
+{% endfor %}
+
+Your Selection (Number):

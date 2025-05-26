@@ -129,6 +129,7 @@ def train(cfg: DictConfig):
         ]
     )
 
+    # we only want examples with only 4 options, as the evaluation will only be done with this method so we can assume this.
     def datasets_with_4_options(example):
         return len(example["choices"]) == 4
 

@@ -59,7 +59,13 @@ class MCQATrainer(Trainer):
             dtype=dtype,
             enabled=self.args.fp16 or self.args.bf16  # Respect trainer's AMP setting
         ):
-            enc = self.tokenizer(prompts, return_tensors="pt", padding=True).to(device)
+            enc = self.tokenizer(
+                prompts,
+                return_tensors="pt",
+                padding=True,
+                truncation=True,
+                max_length=2048,
+            ).to(device)
             outputs = model(**enc)
             last_logits = outputs.logits[:, -1, :]  # [B, V]
             
@@ -99,7 +105,7 @@ class MCQATrainer(Trainer):
         overall_correct = 0
         overall_total = 0
 
-        with torch.inference_mode(), torch.amp.autocast("cuda"):
+        with torch.inference_mode(), torch.amp.autocast("cuda"), torch.no_grad():
             batch_pbar = tqdm(
                 dataloader, desc="Evaluating", leave=False
             )

@@ -1,0 +1,8 @@
+{{ context }}
+
+Considering this, {{ question_text }}
+The options are:
+{% for choice_text in choices_list %}
+  {{ (65 + loop.index0) | chr }}) {{ choice_text }} {# a, b, c... #}
+{% endfor %}
+Provide the answer (A, B, C, etc.):

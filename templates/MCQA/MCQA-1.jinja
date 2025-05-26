@@ -1,0 +1,10 @@
+The following are multiple choice questions (with answers) about knowledge and skills in advanced master-level STEM courses.
+
+{{ question }}
+
+Please select from the following:
+{% for choice_text in choices_list %}
+{{ (65 + loop.index0) | chr }}) {{ choice_text }}
+{% endfor %}
+
+Answer: 

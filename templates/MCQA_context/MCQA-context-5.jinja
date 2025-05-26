@@ -1,0 +1,11 @@
+Document Excerpt:
+{{ context }}
+
+Analysis Task: Respond to "{{ question_text }}" using one of the candidate answers below.
+
+Candidate Answers:
+{% for choice_text in choices_list %}
+Candidate {{ 65 + loop.index }}: {{ choice_text }}
+{% endfor %}
+
+The most fitting Candidate (provide letter):

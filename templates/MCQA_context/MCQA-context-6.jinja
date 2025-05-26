@@ -1,0 +1,10 @@
+Given the scenario:
+"{{ context }}"
+
+Resolve the following: {{ question_text }}
+The possibilities are listed below:
+{% for choice_text in choices_list %}
+(Pos. {{ (65 + loop.index0) | chr }}) {{ choice_text }}
+{% endfor %}
+
+Which possibility (Pos. A, Pos. B, etc.) is accurate? State the letter:

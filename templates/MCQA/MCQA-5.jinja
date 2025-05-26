@@ -1,0 +1,6 @@
+Could you give me the answer to this question: {{ question }}
+
+The choices are:
+{% for choice_text in choices_list %}
+  Item {{ (65 + loop.index0) | chr }}: "{{ choice_text }}"
+{% endfor %}

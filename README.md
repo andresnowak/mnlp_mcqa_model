@@ -1,3 +1,5 @@
+torch 2.5.1 cuda 12.1 is needed
+
 **It seems we are not allowed to use chat templates so it is not possible to do instruction finetuning**
 
 ## Ideas

@@ -128,6 +128,20 @@ def train(cfg: DictConfig):
         ]
     )
 
+    def datasets_with_4_options(example):
+        return len(example["choices"]) == 4
+
+    raw_train_dataset.filter(
+        lambda x: datasets_with_4_options(x),
+        batched=True,
+        num_proc=30,
+    )
+    raw_val_dataset.filter(
+        lambda x: datasets_with_4_options(x),
+        batched=True,
+        num_proc=30,
+    )
+
     raw_train_dataset = raw_train_dataset.shuffle(seed=cfg.environment.seed)
     raw_val_dataset = raw_val_dataset.shuffle(seed=cfg.environment.seed)
 

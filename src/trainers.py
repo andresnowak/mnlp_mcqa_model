@@ -100,7 +100,10 @@ class MCQATrainer(Trainer):
         overall_total = 0
 
         with torch.inference_mode(), torch.amp.autocast("cuda"):
-            for batch in dataloader:
+            batch_pbar = tqdm(
+                dataloader, desc="Evaluating", leave=False
+            )
+            for batch in batch_pbar:
                 prompts = batch["prompt"]
                 options = batch["options"]
                 correct_idxs = batch["correct_idx"]
@@ -150,6 +153,7 @@ class MCQATrainer(Trainer):
         # return as metrics dict
         metrics = {"accuracy": overall_acc}
         metrics.update({f"accuracy_{ds}": acc for ds, acc in acc_by_ds.items()})
+        self.log(metrics)
         return metrics
     
 # ------ Instruction finetuning trainer -------
@@ -254,7 +258,7 @@ class IFSFTTrainer(SFTTrainer):
             )
 
         eval_results.update(mmlu_results)
-        self.log(eval_results)
+        self.log(mmlu_results)
 
         # Return all results - trainer will handle logging automatically
         return eval_results

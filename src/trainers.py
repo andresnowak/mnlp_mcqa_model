@@ -151,8 +151,8 @@ class MCQATrainer(Trainer):
         overall_acc = overall_correct / overall_total if overall_total > 0 else 0.0
 
         # return as metrics dict
-        metrics = {"accuracy": overall_acc}
-        metrics.update({f"accuracy_{ds}": acc for ds, acc in acc_by_ds.items()})
+        metrics = {"eval_accuracy": overall_acc}
+        metrics.update({f"eval_accuracy_{ds}": acc for ds, acc in acc_by_ds.items()})
         self.log(metrics)
         return metrics
     

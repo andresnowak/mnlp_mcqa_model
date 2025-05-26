@@ -88,7 +88,7 @@ def train(cfg: DictConfig):
         id=wandb_id[0],
         resume=wandb_id[1],
         project=cfg.wandb.project,
-        name=cfg.wandb.name,
+        name=f"{cfg.wandb.name}_{datetime.now().strftime('%Y-%m-%d')}",
         config=OmegaConf.to_container(cfg, resolve=True),  # export all cfg to wandb)
     )
     wandb_id_path = os.path.join(cfg.training.output_dir, "wandb_run_id.txt")

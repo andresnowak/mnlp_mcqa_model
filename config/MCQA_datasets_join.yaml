@@ -98,6 +98,12 @@ datasets:
     config: default
     source: hf
     subset_name: ScienceQA
+  - name: derek-thomas/ScienceQA
+    split: test
+    type: MCQA
+    config: default
+    source: hf
+    subset_name: ScienceQA
   ## math_qa
   - name: allenai/math_qa
     type: MCQA
@@ -160,11 +166,5 @@ datasets:
     type: MCQA
     config: default
     split: validation
-    source: hf
-    subset_name: medmcqa
-  - name: openlifescienceai/medmcqa
-    type: MCQA
-    config: default
-    split: test
     source: hf
     subset_name: medmcqa

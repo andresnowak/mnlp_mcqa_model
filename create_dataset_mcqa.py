@@ -169,7 +169,7 @@ def med_mcqa(data: Dataset, data_info: dict):
     med_mcqa_data = []
 
     for cnt, data_point in enumerate(data):
-        if data_point["choice_type"] != "single":
+        if data_point["choice_type"] != "single" or data_point["cop"] == -1:
             continue
 
         choices = [data_point[f"op{i}"] for i in ["a", "b", "c", "d"]]
@@ -185,7 +185,7 @@ def med_mcqa(data: Dataset, data_info: dict):
                 "question": data_point["question"],
                 "choices": choices,
                 "answer": answer,
-                "context": data_point["exp"],
+                "context": None, # the exp column is about the explanation of solution
             }
         )
 
@@ -197,7 +197,7 @@ def join_datasets(config):
     dataset_splits = []
 
     for dataset_info in tqdm(config["datasets"], desc="Processing datasets"):
-        split = dataset_info.get("split", "train")
+        split = dataset_info["split"]
         dataset = load_dataset(
             dataset_info["name"],
             dataset_info["config"],
@@ -256,7 +256,9 @@ if __name__ == "__main__":
             name, split = name_combined.split("|")
             print(f"Pushing {name} dataset, split: {split}")
             dataset.push_to_hub(
-                config["hub_dataset_name"], split=split, config_name=name
+                config["hub_dataset_name"],
+                split=split,
+                config_name=name,
             )
             time.sleep(10)
 

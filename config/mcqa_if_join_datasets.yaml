@@ -22,7 +22,7 @@ datasets:
     config: [train, validation, test]
   - name: andresnowak/MNLP_MCQA_dataset
     subset_name: medmcqa
-    config: [train, validation, test]
+    config: [train, validation]
   - name: andresnowak/MNLP_MCQA_dataset
     subset_name: openbookqa
     config: [train, validation, test]

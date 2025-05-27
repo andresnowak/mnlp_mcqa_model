@@ -27,18 +27,27 @@ general:
   ]
 
 datasets:
+  ## mmlu auxiliary train
   - name: kz919/mmlu-auxiliary-train-auto-labelled ## This datasets come form the auxiliary train subset of cais/mmlu in reallity they just added the auto-labels to this examples
     type: MCQA
     config: default
     split: train
     source: hf
     subset_name: mmlu-auxiliary-train-auto-labelled
+  ## mmlu
   - name: cais/mmlu
     type: MCQA
     config: all
     split: validation
     source: hf
     subset_name: mmlu
+  - name: cais/mmlu
+    type: MCQA
+    config: all
+    split: test
+    source: hf
+    subset_name: mmlu
+  ## ai2 arc easy
   - name: allenai/ai2_arc
     type: MCQA
     split: train
@@ -57,6 +66,7 @@ datasets:
     config: ARC-Easy
     source: hf
     subset_name: ai2_arc_easy
+  ## ai2 arc challenge
   - name: allenai/ai2_arc
     type: MCQA
     split: train
@@ -75,6 +85,7 @@ datasets:
     config: ARC-Challenge
     source: hf
     subset_name: ai2_arc_challenge
+  ## scienceqa
   - name: derek-thomas/ScienceQA
     split: train
     type: MCQA
@@ -87,6 +98,7 @@ datasets:
     config: default
     source: hf
     subset_name: ScienceQA
+  ## math_qa
   - name: allenai/math_qa
     type: MCQA
     config: default
@@ -99,6 +111,7 @@ datasets:
     split: validation
     source: hf
     subset_name: math_qa
+  ## openbookqa
   - name: allenai/openbookqa
     type: MCQA
     config: additional
@@ -117,6 +130,7 @@ datasets:
     split: test
     source: hf
     subset_name: openbookqa
+  ## sciq
   - name: allenai/sciq
     type: MCQA
     config: default
@@ -135,6 +149,7 @@ datasets:
     split: test
     source: hf
     subset_name: sciq
+  ## medmcqa
   - name: openlifescienceai/medmcqa
     type: MCQA
     config: default

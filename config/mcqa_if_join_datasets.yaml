@@ -12,6 +12,9 @@ datasets:
     subset_name: mmlu-auxiliary-train-auto-labelled
     config: [train]
   - name: andresnowak/MNLP_MCQA_dataset
+    subset_name: mmlu
+    config: [validation, test]
+  - name: andresnowak/MNLP_MCQA_dataset
     subset_name: ai2_arc_challenge
     config: [train, validation, test]
   - name: andresnowak/MNLP_MCQA_dataset

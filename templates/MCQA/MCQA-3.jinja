@@ -1,7 +1,7 @@
 What is the answer to this question: {{ question }}
 
 {% for choice_text in choices_list %}
-- {{ (65 + loop.index0) | chr }}) {{ choice_text }}
+    {{ choice_text }}
 {% endfor %}
 
 Solution (letter):

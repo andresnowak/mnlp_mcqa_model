@@ -7,7 +7,7 @@ environment:
 model:
   # name: andresnowak/Qwen3-0.6B-instruction-finetuned
   name: Qwen/Qwen3-0.6B-Base
-  hub_model_id: andresnowak/Qwen3-0.6B-MNLP_M2_mcqa_model
+  hub_model_id: andresnowak/Qwen3-0.6B-MNLP_mcqa_model_text
 
 dataset_train:
   - name: andresnowak/MNLP_MCQA_dataset
@@ -84,7 +84,7 @@ training:
 
 wandb:
   project: MNLP-qwen-instruction-finetuning
-  name: qwen-instruction-finetuning-MCQA
+  name: qwen-instruction-finetuning-MCQA-text
 
 
 # from datasets import interleave_datasets

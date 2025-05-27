@@ -35,7 +35,7 @@ print(f"Available gpus {torch.cuda.device_count()}")
 logger = logging.getLogger(__name__)
 
 # Define paths to your template folders
-template_dir = 'templates/MCQA'
+template_dir = f"{os.getcwd()}/templates/MCQA" # seems jinja wants the absolute path
 template_files = [f for f in os.listdir(template_dir) if f.endswith('.jinja')]
 jinja_env = Environment(loader=FileSystemLoader(template_dir))
 
@@ -62,12 +62,15 @@ def load_mmlu_datasets(name="cais/mmlu", split="test", subjects=["abstract_algeb
     return mmlu_datasets
 
 
-def format_mcqa_questions(example, tokenizer):
+def format_mcqa_questions(question, choices, tokenizer):
     formatted_text = ""
 
     chosen_template = random.choice(template_files)
     template = jinja_env.get_template(chosen_template)
-    formatted_text = template.render(question=example["question"], choices_list=example["choices"])
+
+    question_val = question
+    choices = [f"{chr(65 + i)}. {choice}" for i, choice in enumerate(choices)]
+    formatted_text = template.render(question=question_val, choices_list=choices)
 
     # formatted_text += (
     #     tokenizer.eos_token
@@ -75,12 +78,10 @@ def format_mcqa_questions(example, tokenizer):
 
     return formatted_text
 
-def format_mcqa_answer(example, tokenizer):
-    answer = example["answer"]
+def format_mcqa_answer(answer, choices, tokenizer):
+    pos =ord(answer) -  ord("A")
 
-    pos = ord("A") - ord(answer)
-
-    completion = f"{answer}. {example['choices'][pos]}{tokenizer.eos_token}"  # add eos_token so it doesn't go on forever
+    completion = f"{answer}. {choices[pos]}{tokenizer.eos_token}"  # add eos_token so it doesn't go on forever
 
     return completion
 
@@ -94,10 +95,12 @@ def tokenize_mcqa_with_labels(examples, tokenizer):
     labels_list = []
     attention_mask_list = []
     
-    for example in examples:
+    for question, choices, answer in zip(examples["question"], examples["choices"], examples["answer"]):
         # Get prompt and completion
-        prompt = format_mcqa_questions(example, tokenizer)
-        completion = format_mcqa_answer(example, tokenizer)
+        prompt = format_mcqa_questions(question, choices, tokenizer)
+        completion = format_mcqa_answer(
+            answer, choices, tokenizer
+        )
         
         # Tokenize separately to know the lengths
         prompt_tokens = tokenizer.encode(prompt, add_special_tokens=False)
@@ -149,7 +152,7 @@ def get_wandb_id(cfg):
     return wandb_id, resume_mode
 
 
-@hydra.main(config_path="config", config_name="IF-config.yml", version_base="1.1")
+@hydra.main(config_path="config", config_name="MCQA-text_config.yaml", version_base="1.1")
 def train(cfg: DictConfig):
     random.seed(cfg.environment.seed)
 
@@ -254,7 +257,7 @@ def train(cfg: DictConfig):
         num_proc=30,
     )
     val_dataset = raw_val_dataset.map(
-        lambda x: tokenize_mcqa_with_labels(x, tokenizer)
+        lambda x: tokenize_mcqa_with_labels(x, tokenizer),
         batched=True,
         num_proc=30,
     )
@@ -269,7 +272,7 @@ def train(cfg: DictConfig):
         * cfg.training.gradient_accumulation_steps
     )
     logger.info("***** Running training *****")
-    logger.info(f"  Num examples = {len(split['train'])}")
+    logger.info(f"  Num examples = {len(train_dataset)}")
     logger.info(f"  Num Epochs = {cfg.training.num_train_epochs}")
     logger.info(
         f"  Instantaneous batch size per device = {cfg.training.per_device_train_batch_size}"

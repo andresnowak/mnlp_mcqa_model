@@ -26,17 +26,9 @@ torch 2.5.1 cuda 12.1 is needed
 - We should use an effective batch size of 128
   - Doing small batch sizes makes the gradient noisy, and this can make the model take a "zig-zag" path to the optimal solution
 
-
 ## Training efficiency
 - Use accelerate
-  - ```
-  accelerate launch
- --mixed_precision $DTYPE
- --num_machines $NUM_NODES
- --num_processes $NUM_GPUS
---dynamo_backend 'no'
- finetune.py
- ```
+  - ```accelerate launch --mixed_precision $DTYPE --num_machines $NUM_NODES --num_processes $NUM_GPUS --dynamo_backend 'no' finetune.py```
 - We are using bf16 so i think here the mixed precision is not a problem
 - Use Flash attention 2
 - Always add this line export `export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7` so we can see all the gpus for multi gpu training and not just one (in the end probably this isn't possible becasuse the gpus are assigned a memory size by default for each student I think and i get Out of Memory errors because of this)
@@ -44,13 +36,27 @@ torch 2.5.1 cuda 12.1 is needed
 ## Heuristics of how things work
 - First warmup ratio, at the beggining it is possible teh gradient norm will be zero becasue it will be scaled by a very small learning rate, but the computation are not wasted as Optimizers (e.g., Adam) still accumulate gradient statistics (mean/variance) during warmup, which are critical for later steps. But we won't be training on that part of the dataset, we are just computing the momentums for the optimizer.
 - With smaller models you can use bigger learning rates, as we have fewer parameters the gradients have less averaging across parameters, so they are deterinistic
+- For fine-tuning (SFT), the warmup ratio can depend on how different the downstream task is from the pretraining task.
+  - If the task is very different, a higher warmup ratio might help the model adapt gradually.
+  - If the task is similar, less warmup may be needed.
+
+
+## Instruction finetuning datasets
+- Probably the AYA dataset is not a good one as it is a very big multilingual dataset
+- The FlanV2 dataset is a very high quality instruction finetuning dataset, so in reality with this dataset we should need to do to much the idea fof applying random templates
+- The good instruciton finetuning datasets are:
+  - FlanV2
+  - Scirif data
+  - the tulu if persona data (ifData)
+  - noRobots
+  - maybe a little bit of Oasst1, but it seems this dataset is biased to short user instructions and larger assistant answer than the responses
 
 
 ## Extra
 - Talks about the problem of normalizing gradient accumulation https://unsloth.ai/blog/gradient
 
 
-## Understanding the evaluation:
+### Understanding the evaluation:
 
 1. Token-Level Processing (Simplified)
 Your prompt is tokenized into something like this (actual tokens depend on the tokenizer):

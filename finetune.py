@@ -99,16 +99,16 @@ def tokenize_chat_function(examples, tokenizer):
         format_chat_messages(messages, tokenizer) for messages in examples["messages"]
     ]
 
-    # return {"text": texts}
+    return {"text": texts}
 
-    text_tokenized = tokenizer(
-        texts,
-        max_length=2048,
-        truncation=True,
-        padding="longest",
-        return_tensors="pt",
-        add_special_tokens=True, 
-    )
+    # text_tokenized = tokenizer(
+    #     texts,
+    #     max_length=2048,
+    #     truncation=True,
+    #     padding="longest",
+    #     return_tensors="pt",
+    #     add_special_tokens=True, 
+    # )
     # NOTE: did this change so we always have eos token at the end
     # eos_token_id = tokenizer.eos_token_id
     # pad_token_id = tokenizer.pad_token_id
@@ -134,17 +134,17 @@ def tokenize_chat_function(examples, tokenizer):
     # # Vectorized assignment
     # input_ids[batch_indices, last_token_indices] = eos_token_id
 
-    input_ids = text_tokenized["input_ids"]  # (batch_size, seq_len)
-    eos_token_id = tokenizer.eos_token_id
-    last_token = input_ids[:, -1]  # last token in each sequence
+    # input_ids = text_tokenized["input_ids"]  # (batch_size, seq_len)
+    # eos_token_id = tokenizer.eos_token_id
+    # last_token = input_ids[:, -1]  # last token in each sequence
     
-    # Only replace if it's not already eos
-    needs_replace = last_token != eos_token_id
-    input_ids[needs_replace, -1] = eos_token_id
+    # # Only replace if it's not already eos
+    # needs_replace = last_token != eos_token_id
+    # input_ids[needs_replace, -1] = eos_token_id
     
-    text_tokenized["input_ids"] = input_ids
+    # text_tokenized["input_ids"] = input_ids
         
-    return text_tokenized
+    # return text_tokenized
 
 
 def get_wandb_id(cfg):
@@ -258,7 +258,7 @@ def train(cfg: DictConfig):
     # filter examples, this will have more than 2048 tokens
     def filter_long_examples(example):
         # Format the messages to calculate total length
-        formatted_text = format_chat_messages(example["messages"], tokenizer)
+        formatted_text = format_chat_messages(example["messages"], tokenizer, cfg.environment.use_template)
         return len(formatted_text) <= 15_000
 
     raw_train_datasets = concatenate_datasets(dataset_list).shuffle(
@@ -327,10 +327,11 @@ def train(cfg: DictConfig):
         args=training_args,
         train_dataset=split["train"],
         eval_dataset=split["test"],
-        # dataset_text_field="text",
+        dataset_text_field="text",
         mmlu_datasets=mmlu_datasets,
         eval_dataset_name="training_validation_split",  # Name for your training data validation split
         # data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
+        max_seq_length=2048,
     )
 
     # trainer.train(resume_from_checkpoint=last_checkpoint)

@@ -11,7 +11,7 @@ from transformers import (
 from trl import SFTTrainer, SFTConfig
 import torch
 from datasets import load_dataset, concatenate_datasets
-from torch.optim.lr_scheduler import LinearLR
+
 import logging
 import transformers
 import sys
@@ -19,6 +19,8 @@ import datasets
 import os
 from unsloth import unsloth_train
 from datetime import datetime
+import random
+from jinja2 import Environment, FileSystemLoader
 
 from src.trainers import IFSFTTrainer
 
@@ -31,6 +33,11 @@ device = (
 )
 print(f"Available gpus {torch.cuda.device_count()}")
 logger = logging.getLogger(__name__)
+
+# Templates
+template_dir = f"{os.getcwd()}/templates/IF" # seems jinja wants the absolute path
+template_files = [f for f in os.listdir(template_dir) if f.endswith('.jinja')]
+jinja_env = Environment(loader=FileSystemLoader(template_dir))
 
 # ------------------------
 
@@ -54,8 +61,9 @@ def load_mmlu_datasets(name="cais/mmlu", split="test", subjects=["abstract_algeb
     return mmlu_datasets
 
 
-def format_chat_messages(messages, tokenizer):
-    formatted_text = ""
+def format_chat_messages(messages, tokenizer, use_template=True):
+    instruction = ""
+    answer = ""
 
     assert(len(messages) == 2)
     for message in messages:
@@ -63,16 +71,23 @@ def format_chat_messages(messages, tokenizer):
         content = message.get("content", "")
 
         if role == "user":
-            formatted_text += f"{content}\n\n"
+            instruction = content
         elif role == "assistant":
-            formatted_text += f"{content}\n\n"
+            answer = content
         else:
             raise ValueError
-        formatted_text += (
-            tokenizer.eos_token
-        )  # add eos_token so it doesn't go on forever
 
-    return formatted_text.strip()
+    chosen_template = random.choice(template_files)
+    template = jinja_env.get_template(chosen_template)
+
+    if use_template:
+        formatted_text = template.render(instruction=instruction, answer=answer)
+    else:
+        formatted_text = f"{instruction}\n\n{answer}"
+
+    formatted_text += tokenizer.eos_token # add eos_token so it doesn't go on forever
+
+    return formatted_text
 
 
 def tokenize_chat_function(examples, tokenizer):
@@ -86,13 +101,31 @@ def tokenize_chat_function(examples, tokenizer):
 
     # return {"text": texts}
 
-    return tokenizer(
+    text_tokenized = tokenizer(
         texts,
         max_length=2048,
         truncation=True,
         padding="longest",
         return_tensors="pt",
+        add_special_tokens=True, 
     )
+    # NOTE: did this change so we always have eos token at the end
+    eos_token_id = tokenizer.eos_token_id
+    pad_token_id = tokenizer.pad_token_id
+
+    # Mask for non-pad tokens (1 = real token, 0 = pad)
+    non_pad_mask = text_tokenized["input_ids"] != pad_token_id
+
+    # Find the last non-pad position for each sequence
+    last_non_pad_positions = non_pad_mask.long().argmax(dim=1)  # Works for left-padding
+    # If right-padded, use: `(non_pad_mask.cumsum(dim=1).argmax(dim=1))`
+
+    # Overwrite ONLY the last non-pad tokens with EOS
+    text_tokenized["input_ids"][
+        torch.arange(len(last_non_pad_positions)), last_non_pad_positions
+    ] = eos_token_id
+
+    return text_tokenized
 
 
 def get_wandb_id(cfg):
@@ -109,8 +142,10 @@ def get_wandb_id(cfg):
     return wandb_id, resume_mode
 
 
-@hydra.main(config_path="config", config_name="IF-config.yml", version_base="1.1")
+@hydra.main(config_path="config", config_name="IF-config_2.yml", version_base="1.1")
 def train(cfg: DictConfig):
+    random.seed(cfg.environment.seed)
+
     # Resume from checkpoint
     # Look for a latest checkpoint in the output directory
     last_checkpoint = None

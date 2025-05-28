@@ -56,6 +56,11 @@ torch 2.5.1 cuda 12.1 is needed
 - Talks about the problem of normalizing gradient accumulation https://unsloth.ai/blog/gradient
 
 
+## Important
+- It seems it is necessary to use the datacollator as it adds the special tokens correctly to the tokenization of the inputs, (I think the trainer at least does the label shifting)
+  - It seems the way i do the tokenization is wrong compared to the one that sfttrainer does or unsloth does (and the sft one is also faster when training i don't know what is the difference). but pretty sure what im doing maybe is wrong (or maybe the sft trainer doesn't already add manually teh label shifting?), but the datacollator is not necessary it is jsut it seems the way im tokenizing is wrong as the loss that i get with my manual tokenization is bigger (2 instead of 1) and the grad norm at the beggining is 150 compared to sft with 2 or 4 (so pretty sure something is wrong as a big grad norm means the task is very different to what the model was trained for)
+
+
 ### Understanding the evaluation:
 
 1. Token-Level Processing (Simplified)

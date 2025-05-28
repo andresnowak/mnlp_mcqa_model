@@ -110,21 +110,40 @@ def tokenize_chat_function(examples, tokenizer):
         add_special_tokens=True, 
     )
     # NOTE: did this change so we always have eos token at the end
+    # eos_token_id = tokenizer.eos_token_id
+    # pad_token_id = tokenizer.pad_token_id
+    
+    # # Skip adjustment if no EOS token
+    # if eos_token_id is None:
+    #     return text_tokenized
+    
+    # # Calculate sequence lengths (number of non-pad tokens)
+    # input_ids = text_tokenized["input_ids"]
+    # non_pad_mask = input_ids != pad_token_id
+    # seq_lengths = non_pad_mask.sum(dim=1)  # Vectorized computation
+    
+    # # Create indices for last tokens [batch_size, 2]
+    # batch_indices = torch.arange(input_ids.size(0))
+    # last_token_indices = seq_lengths - 1  # Position of last non-pad token
+    
+    # # Only modify sequences with at least 1 token
+    # valid_seqs = seq_lengths > 0
+    # batch_indices = batch_indices[valid_seqs]
+    # last_token_indices = last_token_indices[valid_seqs]
+    
+    # # Vectorized assignment
+    # input_ids[batch_indices, last_token_indices] = eos_token_id
+
+    input_ids = text_tokenized["input_ids"]  # (batch_size, seq_len)
     eos_token_id = tokenizer.eos_token_id
-    pad_token_id = tokenizer.pad_token_id
-
-    # Mask for non-pad tokens (1 = real token, 0 = pad)
-    non_pad_mask = text_tokenized["input_ids"] != pad_token_id
-
-    # Find the last non-pad position for each sequence
-    last_non_pad_positions = non_pad_mask.long().argmax(dim=1)  # Works for left-padding
-    # If right-padded, use: `(non_pad_mask.cumsum(dim=1).argmax(dim=1))`
-
-    # Overwrite ONLY the last non-pad tokens with EOS
-    text_tokenized["input_ids"][
-        torch.arange(len(last_non_pad_positions)), last_non_pad_positions
-    ] = eos_token_id
-
+    last_token = input_ids[:, -1]  # last token in each sequence
+    
+    # Only replace if it's not already eos
+    needs_replace = last_token != eos_token_id
+    input_ids[needs_replace, -1] = eos_token_id
+    
+    text_tokenized["input_ids"] = input_ids
+        
     return text_tokenized
 
 
@@ -289,7 +308,7 @@ def train(cfg: DictConfig):
         max_grad_norm=cfg.training.max_grad_norm,
         warmup_ratio=cfg.training.warmup_ratio,
         eval_strategy="steps",
-        eval_steps=200,
+        eval_steps=300,
         logging_steps=10,
         report_to=cfg.training.report_to,
         save_strategy="steps",

@@ -46,7 +46,7 @@ dataset:
     size: 0.3
   - name: andresnowak/Instruction-finetuning-mixture-mnlp
     config: tirMath
-    size: 0.5
+    size: 0.4
   - name: andresnowak/Instruction-finetuning-mixture-mnlp
     config: wildChat
     size: 0.7
@@ -71,8 +71,8 @@ training:
   num_train_epochs: 2
   weight_decay: 0.00
   warmup_ratio: 0.03
-  max_grad_norm: 1.0
-  linear_layers_max_grad_norm: 1.0
+  max_grad_norm: 0.5
+  # linear_layers_max_grad_norm: 0.5
 
 wandb:
   project: MNLP-qwen-instruction-finetuning

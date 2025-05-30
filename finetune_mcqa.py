@@ -58,7 +58,7 @@ def mcqa_collatefn(batch):
     }
 
 
-@hydra.main(config_path="config", config_name="MCQA-config.yaml", version_base="1.1")
+@hydra.main(config_path="config", config_name="MCQA-config_2.yaml", version_base="1.1")
 def train(cfg: DictConfig):
     # Resume from checkpoint
     # Look for a latest checkpoint in the output directory
@@ -183,7 +183,7 @@ def train(cfg: DictConfig):
         max_grad_norm=cfg.training.max_grad_norm,
         warmup_ratio=cfg.training.warmup_ratio,
         eval_strategy="steps",
-        eval_steps=200,
+        eval_steps=300,
         logging_steps=10,
         report_to=cfg.training.report_to,
         save_strategy="steps",

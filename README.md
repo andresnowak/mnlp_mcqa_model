@@ -60,8 +60,14 @@ torch 2.5.1 cuda 12.1 is needed
 - It seems it is necessary to use the datacollator as it adds the special tokens correctly to the tokenization of the inputs, (I think the trainer at least does the label shifting)
   - It seems the way i do the tokenization is wrong compared to the one that sfttrainer does or unsloth does (and the sft one is also faster when training i don't know what is the difference). but pretty sure what im doing maybe is wrong (or maybe the sft trainer doesn't already add manually teh label shifting?), but the datacollator is not necessary it is jsut it seems the way im tokenizing is wrong as the loss that i get with my manual tokenization is bigger (2 instead of 1) and the grad norm at the beggining is 150 compared to sft with 2 or 4 (so pretty sure something is wrong as a big grad norm means the task is very different to what the model was trained for)
 
+## Understanding SFT
+- Do we train only on the completion or in the whole input
+	- Our TA said that there shouldn't be any difference, but that aa friend of his working on a company says that if the output is always of longer length than the prompt the model can have a big loss (maybe because the model losses track of the prompt)
+	- But i feel researching supposedly it should be only on the completion, but I also don't know what SFT trainer does by default
+		- It seems SFT only applies completion loss only when using prompt and answer datasets but with the chat datsets it seems it doesn't
 
-### Understanding the evaluation:
+
+## Understanding the evaluation:
 
 1. Token-Level Processing (Simplified)
 Your prompt is tokenized into something like this (actual tokens depend on the tokenizer):

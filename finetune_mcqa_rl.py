@@ -284,7 +284,7 @@ def train(cfg: DictConfig):
         save_total_limit=3,
         bf16=torch.cuda.is_bf16_supported(),
         fp16=not torch.cuda.is_bf16_supported(),
-        lr_scheduler_type="linear",
+        lr_scheduler_type="cosine",
         seed=cfg.environment.seed,
         push_to_hub=True,
         hub_model_id=cfg.model.hub_model_id,

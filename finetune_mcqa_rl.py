@@ -1,5 +1,5 @@
-import unsloth
-from unsloth import FastLanguageModel
+# import unsloth
+# from unsloth import FastLanguageModel
 import hydra
 from omegaconf import DictConfig, OmegaConf
 import wandb
@@ -17,7 +17,7 @@ import transformers
 import sys
 import datasets
 import os
-from unsloth import unsloth_train
+# from unsloth import unsloth_train
 from datetime import datetime
 import random
 from jinja2 import Environment, FileSystemLoader, ChoiceLoader
@@ -73,21 +73,28 @@ def format_mcqa_answer(answer, choices, tokenizer):
 
 def tokenize_mcqa_with_labels(examples, tokenizer):
     """Tokenize MCQA examples with proper labels for training"""
-    dataset_entries = []
+    prompts_list = []
+    completion_list = []
+    choices_list = []
+    answer_list = []
 
     for question, choices, answer in zip(
         examples["question"], examples["choices"], examples["answer"]
     ):
         prompt = format_mcqa_questions(question, choices, tokenizer)
         completion = format_mcqa_answer(answer, choices, tokenizer)
-        
 
-        dataset_entries.append({
-            "prompt": prompt,
-            "completion": completion,
-            "choices": choices,
-            "correct_answer_letter": answer
-        })
+        prompts_list.append(prompt)
+        completion_list.append(completion)
+        choices_list.append(choices)
+        answer_list.append(answer)
+
+    return {
+            "prompt": prompts_list,
+            "completion": completion_list,
+            "choices": choices_list,
+            "correct_answer_letter": answer_list
+        }
 
 
 
@@ -184,13 +191,18 @@ def train(cfg: DictConfig):
         cfg.training.weight_decay = wandb.config["training"]["weight_decay"]
 
     # Load model
-    model, tokenizer = FastLanguageModel.from_pretrained(
-        cfg.model.name,
-        dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16,
-        attn_implementation="flash_attention_2",
-        load_in_4bit=False,
-        load_in_8bit=False,
-    )
+    # model, tokenizer = FastLanguageModel.from_pretrained(
+    #     cfg.model.name,
+    #     dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16,
+    #     attn_implementation="flash_attention_2",
+    #     load_in_4bit=False,
+    #     load_in_8bit=False,
+    # )
+    tokenizer = AutoTokenizer.from_pretrained(cfg.model.name)
+    model = AutoModelForCausalLM.from_pretrained(cfg.model.name,
+        torch_dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16,
+        # attn_implementation="flash_attention_2"
+        )
 
     # Enable gradient computation
     for param in model.parameters():
@@ -265,7 +277,7 @@ def train(cfg: DictConfig):
         max_grad_norm=cfg.training.max_grad_norm,
         warmup_ratio=cfg.training.warmup_ratio,
         eval_strategy="steps",
-        eval_steps=200,
+        eval_steps=3000,
         logging_steps=10,
         report_to=cfg.training.report_to,
         save_strategy="steps",
@@ -278,20 +290,23 @@ def train(cfg: DictConfig):
         hub_model_id=cfg.model.hub_model_id,
         max_completion_length=cfg.training.completion_length,
         num_generations=cfg.training.num_generations,
+        beta=cfg.training.beta
     )
 
     # Initialize trainer
     trainer = GRPOTrainer(
         model=model,
-        tokenizer=tokenizer,
+        processing_class=tokenizer,
+        reward_processing_classes=tokenizer,
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=val_dataset,
-        reward_funcs={"mcqa": mcqa_reward_function},
+        reward_funcs=mcqa_reward_function,
     )
 
     # Start training
-    unsloth_train(trainer, resume_from_checkpoint=last_checkpoint)
+    trainer.train(resume_from_checkpoint=last_checkpoint)
+    # unsloth_train(trainer, resume_from_checkpoint=last_checkpoint)
     wandb.finish()
 
     # Push final model to hub

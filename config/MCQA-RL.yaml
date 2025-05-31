@@ -6,8 +6,9 @@ environment:
 
 model:
   # name: andresnowak/Qwen3-0.6B-instruction-finetuned
-  name: Qwen/Qwen3-0.6B-Base
-  hub_model_id: andresnowak/Qwen3-0.6B-MNLP_mcqa_model_text
+  # name: Qwen/Qwen3-0.6B-Base
+  name: andresnowak/Qwen3-0.6B-MNLP_mcqa_model_text
+  hub_model_id: andresnowak/Qwen3-0.6B-MNLP_mcqa_rl
 
 dataset_train:
   - name: andresnowak/MNLP_MCQA_dataset
@@ -73,19 +74,20 @@ training:
   resume_dir: None
   report_to: wandb
   learning_rate: 1e-5
-  per_device_train_batch_size: 2
-  per_device_eval_batch_size: 2
-  gradient_accumulation_steps: 32 # to get effective 64
-  num_train_epochs: 2
+  per_device_train_batch_size: 8
+  per_device_eval_batch_size: 8
+  gradient_accumulation_steps: 8 # to get effective 64
+  num_train_epochs: 1
   weight_decay: 0.00
   warmup_ratio: 0.05
   max_grad_norm: 1.0
-  num_generations: 8
+  num_generations: 4
   completion_length: 100
+  beta: 0.2
 
 wandb:
   project: MNLP-qwen-instruction-finetuning
-  name: qwen-instruction-finetuning-MCQA-text
+  name: qwen-instruction-finetuning-MCQA-RL
 
 
 # from datasets import interleave_datasets

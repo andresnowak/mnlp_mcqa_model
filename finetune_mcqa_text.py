@@ -79,7 +79,7 @@ def format_mcqa_questions(question, choices, tokenizer):
     return formatted_text
 
 def format_mcqa_answer(answer, choices, tokenizer):
-    pos =ord(answer) -  ord("A")
+    pos = ord(answer) -  ord("A")
 
     completion = f"{answer}. {choices[pos]}{tokenizer.eos_token}"  # add eos_token so it doesn't go on forever
 
@@ -92,8 +92,7 @@ def tokenize_mcqa_with_labels(examples, tokenizer):
     This gives precise control over which tokens contribute to loss.
     """
     input_ids_list = []
-    labels_list = []
-    attention_mask_list = []
+    completion_mask_list = []
     
     for question, choices, answer in zip(examples["question"], examples["choices"], examples["answer"]):
         # Get prompt and completion
@@ -103,38 +102,24 @@ def tokenize_mcqa_with_labels(examples, tokenizer):
         )
         
         # Tokenize separately to know the lengths
-        prompt_tokens = tokenizer.encode(prompt, add_special_tokens=False)
+        prompt_tokens = tokenizer.encode(prompt, add_special_tokens=False, max_length=2048)
         completion_tokens = tokenizer.encode(completion, add_special_tokens=False)
         
         # Combine tokens
         input_ids = prompt_tokens + completion_tokens
         
         # Create labels: -100 for prompt tokens, actual tokens for completion
-        labels = [-100] * len(prompt_tokens) + completion_tokens
-        
+
         # Create attention mask (1 for all real tokens)
-        attention_mask = [1] * len(input_ids)
-        
-        # Truncate if too long
-        max_length = getattr(tokenizer, 'model_max_length', 2048)
-        if len(input_ids) > max_length:
-            input_ids = input_ids[:max_length]
-            labels = labels[:max_length]
-            attention_mask = attention_mask[:max_length]
-            
-            # Ensure the sequence ends properly
-            if input_ids[-1] != tokenizer.eos_token_id:
-                input_ids[-1] = tokenizer.eos_token_id
-                labels[-1] = tokenizer.eos_token_id
+        completion_mask = [0] * len(prompt_tokens) + [1] * len(completion_tokens)
+    
         
         input_ids_list.append(input_ids)
-        labels_list.append(labels)
-        attention_mask_list.append(attention_mask)
+        completion_mask_list.append(completion_mask)
     
     return {
         "input_ids": input_ids_list,
-        "labels": labels_list,
-        "attention_mask": attention_mask_list
+        "completion_mask": completion_mask_list
     }
 
 
@@ -319,7 +304,7 @@ def train(cfg: DictConfig):
         # dataset_text_field="text",
         mmlu_datasets=mmlu_datasets,
         eval_dataset_name="training_validation_split", 
-        # data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
+        data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
     )
 
     # trainer.train(resume_from_checkpoint=last_checkpoint)

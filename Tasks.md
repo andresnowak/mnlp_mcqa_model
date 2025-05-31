@@ -1,9 +1,10 @@
 
 - [x] ⁠remove NLP4education form dataset
 - [x] ⁠⁠Maybe see about increasing a little bit the dataset of MCQA
-- [ ] ⁠Test more with direct single letter MCQA and try directly from the finetuned model
+- [x] ⁠Test more with direct single letter MCQA and try directly from the finetuned model
   - [x] Right now the training seems to be wrong, like th softmax is applied differently when we have different number of options (the denominator size is different) and i think this is wrong like you can be doing different types of losses with different amount of classes the calculations are different even though it isi being normalized (it is easier to increase the probability when you have less options)
     - We fix this by just training on examples with 4 choices
+  - The model works well it seems directly from the finetuned model
 - [ ] ⁠Try something again with instruction finetuned one (without the NLP and maybe without other languages, but i don’t think that part affected it). like i don’t know how many examples where truncated and the eos token was visible because of this, i have to also fix that
   - [x] Try experiment with random templates for instruction finetuning
     - It worked well, but right now my instruction finetuning seems to remove reasoning (lets thinkg step by step) abilities
@@ -16,6 +17,11 @@
 - [x] Use unsloth trainer instead in finetune.py to fix the error of the gradient accumulation
 - [x] Fix problem with Xformers
 - [x] Try and use a higher warmup ratio for the instruction finetuning
-- [ ] Try and use the NEFTune method
+- [ ] Try and use the NEFTune method maybe
 
-⁠⁠We at least understand the evaluation scheme a lot better, the prompt used and they just use the letter for the likelihood it seems
+- [ ] Try RL method for MCQA
+  - Currently trying
+- [ ] Test again the models trying different prompts and using the different completions
+- [ ] Create syntethic dataset with MMLU for adding extra choices
+  - Doing this right now
+- [ ] Try instruction finetuning doing loss only on the completion

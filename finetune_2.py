@@ -307,12 +307,13 @@ def train(cfg: DictConfig):
     unsloth_train(
         trainer, resume_from_checkpoint=last_checkpoint
     )  # use unsloth to have the fix of the gradient accumulation
-    wandb.finish()
 
     trainer.create_model_card(cfg.wandb.name)
 
     # Push final model
     trainer.push_to_hub()
+
+    wandb.finish()
 
 
 if __name__ == "__main__":

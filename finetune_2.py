@@ -35,11 +35,12 @@ print(f"Available gpus {torch.cuda.device_count()}")
 logger = logging.getLogger(__name__)
 
 # Templates
-template_dir = f"{os.getcwd()}/templates/IF" # seems jinja wants the absolute path
-template_files = [f for f in os.listdir(template_dir) if f.endswith('.jinja')]
+template_dir = f"{os.getcwd()}/templates/IF"  # seems jinja wants the absolute path
+template_files = [f for f in os.listdir(template_dir) if f.endswith(".jinja")]
 jinja_env = Environment(loader=FileSystemLoader(template_dir))
 
 # ------------------------
+
 
 def load_mmlu_datasets(name="cais/mmlu", split="test", subjects=["abstract_algebra"]):
     """
@@ -65,7 +66,7 @@ def format_chat_messages(messages, tokenizer, use_template=True):
     instruction = ""
     answer = ""
 
-    assert(len(messages) == 2)
+    assert len(messages) == 2
     for message in messages:
         role = message.get("role", "").lower()
         content = message.get("content", "")
@@ -96,38 +97,25 @@ def tokenize_chat_function(examples, tokenizer):
     containing a list of message dictionaries.
     """
     input_ids_list = []
-    labels_list = []
-    attention_mask_list = []
+    completion_mask_list = []
+    lengths = []
     for messages in examples["messages"]:
         prompt, completion = format_chat_messages(messages, tokenizer)
 
         # Tokenize separately to know the lengths
-        prompt_tokens = tokenizer.encode(
-            prompt, add_special_tokens=False
-        )
+        prompt_tokens = tokenizer.encode(prompt, add_special_tokens=False)
         completion_tokens = tokenizer.encode(completion, add_special_tokens=False)
 
         # Combine tokens
         input_ids = prompt_tokens + completion_tokens
 
-        if input_ids > 2048:
-            continue
-
-        # Create labels: -100 for prompt tokens, actual tokens for completion
-
-        # Create attention mask (1 for all real tokens)
-        labels = [-100] * len(prompt_tokens) + completion_tokens.copy()
-        attention_mask = [1] * len(input_ids)
+        completion_mask = [0] * len(prompt_tokens) + [1] * len(completion_tokens)
 
         input_ids_list.append(input_ids)
-        labels_list.append(labels)
-        attention_mask_list.append(attention_mask)
+        completion_mask_list.append(completion_mask)
+        lengths.append(len(input_ids))
 
-    return {
-        "input_ids": input_ids_list,
-        "labels": labels_list,
-        "attention_mask": attention_mask_list,
-    }
+    return {"input_ids": input_ids_list, "completion_mask": completion_mask_list, "length": lengths}
 
 
 def get_wandb_id(cfg):
@@ -218,8 +206,7 @@ def train(cfg: DictConfig):
     tokenizer.padding_side = "left"  # Critical for Flash Attention compatibility (It seems Qwen3 Flash attention needs this <pad> value, instead of value <pad>)
     tokenizer.max_length = 2048
 
-
-    # ---- Load training dataset ----- 
+    # ---- Load training dataset -----
     dataset_list = []
     for dataset in cfg.dataset:
         # Load the full dataset first
@@ -238,27 +225,25 @@ def train(cfg: DictConfig):
         )
         dataset_list.append(sampled_dataset)
 
-    # filter examples, this will have more than 2048 tokens
-    def filter_long_examples(example):
-        # Format the messages to calculate total length
-        formatted_text = format_chat_messages(example["messages"], tokenizer, cfg.environment.use_template)
-        return len(formatted_text) <= 15_000
-
-    raw_train_datasets = concatenate_datasets(dataset_list).shuffle(
-        seed=cfg.environment.seed
-    ).filter(filter_long_examples, num_proc=10)
+    raw_train_datasets = (
+        concatenate_datasets(dataset_list)
+        .shuffle(seed=cfg.environment.seed)
+    )
 
     # Tokenization with instruction formatting
     tokenized_dataset = raw_train_datasets.map(
         lambda x: tokenize_chat_function(x, tokenizer),
         batched=True,
         num_proc=30,
-    )
+        remove_columns=raw_train_datasets.column_names,  # Remove original columns
+    ).filter(lambda x: x["length"] <= 2048, num_proc=40)
     split = tokenized_dataset.train_test_split(test_size=0.05)
 
     # load mmlu
     mmlu_datasets = load_mmlu_datasets(
-        cfg.dataset_evaluation[0].name, cfg.dataset_evaluation[0].config, cfg.dataset_evaluation[0].subjects
+        cfg.dataset_evaluation[0].name,
+        cfg.dataset_evaluation[0].config,
+        cfg.dataset_evaluation[0].subjects,
     )
 
     # ---- log -----
@@ -278,6 +263,7 @@ def train(cfg: DictConfig):
     logger.info(
         f"  Gradient Accumulation steps = {cfg.training.gradient_accumulation_steps}"
     )
+
 
     # Training setup
     training_args = SFTConfig(
@@ -314,7 +300,7 @@ def train(cfg: DictConfig):
         dataset_text_field="text",
         mmlu_datasets=mmlu_datasets,
         eval_dataset_name="training_validation_split",  # Name for your training data validation split
-        # data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
+        data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
     )
 
     # trainer.train(resume_from_checkpoint=last_checkpoint)

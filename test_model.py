@@ -3,7 +3,7 @@ import torch
 
 # Initialize model and tokenizer
 model_name = "andresnowak/Qwen3-0.6B-instruction-finetuned"
-model_name = "Qwen/Qwen3-0.6B-Base"  # or your finetuned version
+# model_name = "Qwen/Qwen3-0.6B-Base"  # or your finetuned version
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
     torch_dtype="auto",
@@ -18,7 +18,7 @@ def generate_response(prompt):
     # Generate response
     outputs = model.generate(
         **inputs,
-        max_new_tokens=512,
+        max_new_tokens=1024,
         do_sample=True,
         temperature=0.7,
         pad_token_id=tokenizer.eos_token_id

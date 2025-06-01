@@ -101,51 +101,7 @@ D. {choice_d}
 
 
 # %%
-# Optional: Choose a subset for testing
-subset = stem_dataset.select(range(10))
-
-# Now loop through the dataset and format each prompt
-for example in subset:
-    question = example["question"]
-    filled_prompt = prompt_template.format(
-        question=question,
-        choice_a=example["choices"][0],
-        choice_b=example["choices"][1],
-        choice_c=example["choices"][2],
-        choice_d=example["choices"][3],
-    )
-
-    # Send `filled_prompt` to your model here
-    # response = model.generate(filled_prompt) or openai.ChatCompletion.create(...)
-
-    print("===== Prompt =====")
-    print(filled_prompt)
-    print("\n===== Model Output Placeholder =====\n")
-    response = chat_general.ask(filled_prompt, model_args=model_args)
-    print(response)
-
-
-# %%
 responses = []
-
-# %%
-# Optional: Choose a subset for testing
-
-# Now loop through the dataset and format each prompt
-for index, example in enumerate(stem_dataset):
-    question = example["question"]
-    filled_prompt = prompt_template.format(
-        question=question,
-        choice_a=example["choices"][0],
-        choice_b=example["choices"][1],
-        choice_c=example["choices"][2],
-        choice_d=example["choices"][3],
-    )
-
-    chat_new = Chat.create(f"Test chat {index}")
-    response = chat_new.ask(filled_prompt, model_args=model_args)
-    responses.append(response)
-    print(Chat.budget())
 
 # %%
 import json
@@ -171,6 +127,7 @@ for index, example in tqdm(enumerate(stem_dataset), total=len(stem_dataset)):
 
     question = example["question"]
     choices = example["choices"]
+    correct_answer_idx = example["answer"]
 
     filled_prompt = prompt_template.format(
         question=question,
@@ -195,14 +152,16 @@ for index, example in tqdm(enumerate(stem_dataset), total=len(stem_dataset)):
         "filled_prompt": filled_prompt,
         "response": str(response),
         "task": example["task"],
+        "correct_answer": correct_answer_idx
     }
-    responses.append(record)
+    # responses.append(record)
 
     # Save to JSONL incrementally
     with open(output_path, "a") as f:
         f.write(json.dumps(record) + "\n")
 
-    print(Chat.budget())  # Optional: print budget status
+    if index % 100 == 0:
+        print(Chat.budget())
 
 
 # %%

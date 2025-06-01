@@ -102,10 +102,10 @@ def tokenize_chat_function(examples, tokenizer):
         prompt, completion = format_chat_messages(messages, tokenizer)
 
         # Tokenize separately to know the lengths
-        prompt_tokens = tokenizer(
-            prompt, add_special_tokens=False, max_length=2048
+        prompt_tokens = tokenizer.encode(
+            prompt, add_special_tokens=False
         )
-        completion_tokens = tokenizer(completion, add_special_tokens=False)
+        completion_tokens = tokenizer.encode(completion, add_special_tokens=False)
 
         # Combine tokens
         input_ids = prompt_tokens + completion_tokens

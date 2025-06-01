@@ -85,6 +85,8 @@ def format_chat_messages(messages, tokenizer, use_template=True):
     else:
         formatted_text = f"{instruction}\n\n"
 
+    answer += tokenizer.eos_token
+
     return formatted_text, answer
 
 
@@ -93,14 +95,39 @@ def tokenize_chat_function(examples, tokenizer):
     Tokenize chat-based examples where each example has a 'messages' field
     containing a list of message dictionaries.
     """
-    formatted_texts = []
-    answers = []
+    input_ids_list = []
+    labels_list = []
+    attention_mask_list = []
     for messages in examples["messages"]:
-        formatted_text, answer = format_chat_messages(messages, tokenizer)
-        formatted_texts.append(formatted_text)
-        answers.append(answer)
+        prompt, completion = format_chat_messages(messages, tokenizer)
 
-    return {"prompt": formatted_texts, "completion": answers}
+        # Tokenize separately to know the lengths
+        prompt_tokens = tokenizer(
+            prompt, add_special_tokens=False, max_length=2048
+        )
+        completion_tokens = tokenizer(completion, add_special_tokens=False)
+
+        # Combine tokens
+        input_ids = prompt_tokens + completion_tokens
+
+        if input_ids > 2048:
+            continue
+
+        # Create labels: -100 for prompt tokens, actual tokens for completion
+
+        # Create attention mask (1 for all real tokens)
+        labels = [-100] * len(prompt_tokens) + completion_tokens.copy()
+        attention_mask = [1] * len(input_ids)
+
+        input_ids_list.append(input_ids)
+        labels_list.append(labels)
+        attention_mask_list.append(attention_mask)
+
+    return {
+        "input_ids": input_ids_list,
+        "labels": labels_list,
+        "attention_mask": attention_mask_list,
+    }
 
 
 def get_wandb_id(cfg):
@@ -275,9 +302,7 @@ def train(cfg: DictConfig):
         seed=cfg.environment.seed,
         push_to_hub=True,
         hub_model_id=cfg.model.hub_model_id,
-        completion_only_loss=True,
         max_seq_length=2048,
-        max_length=2048,
     )
 
     trainer = IFSFTTrainer(

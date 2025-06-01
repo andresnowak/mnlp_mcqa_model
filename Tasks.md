@@ -19,9 +19,10 @@
 - [x] Try and use a higher warmup ratio for the instruction finetuning
 - [ ] Try and use the NEFTune method maybe
 
-- [ ] Try RL method for MCQA
+- [x] Try RL method for MCQA
   - Currently trying
+  - Now test the model
 - [ ] Test again the models trying different prompts and using the different completions
-- [ ] Create syntethic dataset with MMLU for adding extra choices
   - Doing this right now
+- [x] Create syntethic dataset with MMLU for adding extra choices
 - [ ] Try instruction finetuning doing loss only on the completion

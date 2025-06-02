@@ -6,7 +6,7 @@ import wandb
 from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM,
-    DataCollatorForLanguageModeling,
+    # DataCollatorForLanguageModeling,
 )
 from trl import SFTTrainer, SFTConfig
 import torch
@@ -23,6 +23,9 @@ import random
 from jinja2 import Environment, FileSystemLoader
 
 from src.trainers import IFSFTTrainer
+
+import torch
+torch._inductor.config.triton.multi_kernel = 1  # Fix the type error
 
 device = (
     "cuda"
@@ -188,7 +191,7 @@ def train(cfg: DictConfig):
         # model = AutoModelForCausalLM.from_pretrained(
         cfg.model.name,
         dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16,
-        attn_implementation="flash_attention_2",
+        # attn_implementation="flash_attention_2",
         load_in_4bit=False,
         load_in_8bit=False,
         full_finetuning=True, # this is necessary to activate gradiendts and do upcast in some layers
@@ -298,10 +301,10 @@ def train(cfg: DictConfig):
         args=training_args,
         train_dataset=split["train"],
         eval_dataset=split["test"],
-        dataset_text_field="text",
+        # dataset_text_field="text",
         mmlu_datasets=mmlu_datasets,
         eval_dataset_name="training_validation_split",  # Name for your training data validation split
-        data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
+        # data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False, completion_only_loss=True),
     )
 
     # trainer.train(resume_from_checkpoint=last_checkpoint)

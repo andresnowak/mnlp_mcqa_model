@@ -65,9 +65,9 @@ training:
   resume_dir: None
   report_to: wandb
   learning_rate: 0.00001 # Default value instead of 5e-6
-  per_device_train_batch_size: 16
-  per_device_eval_batch_size: 16
-  gradient_accumulation_steps: 8 # to get effective 128
+  per_device_train_batch_size: 4
+  per_device_eval_batch_size: 4
+  gradient_accumulation_steps: 32 # to get effective 128
   num_train_epochs: 2
   weight_decay: 0.00
   warmup_ratio: 0.03

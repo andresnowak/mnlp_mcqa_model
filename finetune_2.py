@@ -207,7 +207,7 @@ def train(cfg: DictConfig):
         tokenizer.eos_token if tokenizer.pad_token is None else tokenizer.pad_token
     )
     tokenizer.chat_template = None
-    tokenizer.padding_side = "left"  # Critical for Flash Attention compatibility (It seems Qwen3 Flash attention needs this <pad> value, instead of value <pad>)
+    # tokenizer.padding_side = "left"  # Critical for Flash Attention compatibility (It seems Qwen3 Flash attention needs this <pad> value, instead of value <pad>)
     tokenizer.max_length = 2048
 
     # ---- Load training dataset -----
@@ -288,11 +288,12 @@ def train(cfg: DictConfig):
         save_total_limit=3,
         bf16=torch.cuda.is_bf16_supported(),
         fp16=not torch.cuda.is_bf16_supported(),
-        lr_scheduler_type="linear",
+        lr_scheduler_type=cfg.training.lr_scheduler,
         seed=cfg.environment.seed,
         push_to_hub=True,
         hub_model_id=cfg.model.hub_model_id,
-        max_seq_length=2048,
+        # max_seq_length=2048,
+        completion_only_loss=cfg.training.completion_only_loss,
     )
 
     trainer = IFSFTTrainer(

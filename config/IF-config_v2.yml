@@ -73,6 +73,8 @@ training:
   warmup_ratio: 0.03
   max_grad_norm: 1.0
   # linear_layers_max_grad_norm: 0.5
+  lr_scheduler: "linear"
+  completion_only_loss: True
 
 wandb:
   project: MNLP-qwen-instruction-finetuning

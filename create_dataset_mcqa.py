@@ -52,6 +52,25 @@ def MMLU(data: Dataset, data_info: dict, stem_subsets: list[str]):
 
     return mmlu_validation_data
 
+
+def MMLU_10_choices(data: Dataset, data_info: dict):
+    mmlu_validation_data = []
+
+    for cnt, data_point in enumerate(data):
+        mmlu_validation_data.append(
+            {
+                "dataset": data_info["name"],
+                "id": f"{data_info['subset_name']}_{cnt}",
+                "question": data_point["question"],
+                "choices": data_point["10_choices"],
+                "answer": data_point["answer_10_choices_letter"],
+                "context": None,
+            }
+        )
+
+    return mmlu_validation_data
+
+
 def ai2_arc(data: Dataset, data_info: dict):
     arc_easy_data_validation = []
 
@@ -210,6 +229,8 @@ def join_datasets(config):
             data = MMLU_train_auxiliar(dataset, dataset_info, config["general"]["stem_subsets"])
         elif dataset_info["name"] == "cais/mmlu":
             data = MMLU(dataset, dataset_info, config["general"]["stem_subsets"])
+        elif dataset_info["name"] == "andresnowak/mmlu-auxiliary-train-10-choices":
+            data = MMLU_10_choices(dataset, dataset_info)
         elif dataset_info["name"] == "allenai/ai2_arc":
             data = ai2_arc(dataset, dataset_info)
         elif dataset_info["name"] == "derek-thomas/ScienceQA":

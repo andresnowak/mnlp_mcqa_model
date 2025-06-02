@@ -34,6 +34,13 @@ datasets:
     split: train
     source: hf
     subset_name: mmlu-auxiliary-train-auto-labelled
+  ## mmlu auxiliary train 10 choices stem
+  - name: andresnowak/mmlu-auxiliary-train-10-choices
+    type: MCQA
+    config: default
+    split: train
+    source: hf
+    subset_name: mmlu_auxiliary_train_stem_10_choices
   ## mmlu
   - name: cais/mmlu
     type: MCQA

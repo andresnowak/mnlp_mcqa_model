@@ -72,27 +72,48 @@ def format_mcqa_questions(question, choices, tokenizer):
     choices = [f"{chr(65 + i)}. {choice}" for i, choice in enumerate(choices)]
     formatted_text = template.render(question=question_val, choices_list=choices)
 
-    # formatted_text += (
-    #     tokenizer.eos_token
-    # )
-
     return formatted_text
 
-def format_mcqa_answer(answer, choices, tokenizer):
-    pos = ord(answer) -  ord("A")
 
-    completion = f"{answer}. {choices[pos]}{tokenizer.eos_token}"  # add eos_token so it doesn't go on forever
+def format_mcqa_answer(answer: str, choices: list[str], tokenizer) -> str:
+    """
+    Args:
+        answer: The correct answer letter (e.g., "A", "B")
+        choices: List of choice texts (e.g., ["Paris", "London"])
+        tokenizer: HF tokenizer (for EOS token)
+        
+    Returns:
+        Formatted string like "A. Paris<|endoftext|>"
+    """
+    # Validate answer is a single uppercase letter
+    if len(answer) != 1 or not answer.isupper():
+        raise ValueError(f"Answer must be single uppercase letter, got '{answer}'")
+    
+    # Convert to zero-based index
+    choice_idx = ord(answer) - ord("A")
+    
+    # Validate choices exist
+    if not choices:
+        raise ValueError("Choices list cannot be empty")
+    
+    # Check if answer is in valid range
+    if choice_idx < 0 or choice_idx >= len(choices):
+        raise ValueError(
+            f"Answer '{answer}' invalid for {len(choices)} choices (A-{chr(ord('A') + len(choices) - 1})"
+        )
+    
+    # Format with EOS token to stop generation
+    return f"{answer}. {choices[choice_idx]}{tokenizer.eos_token}"
 
-    return completion
 
-
-def tokenize_mcqa_with_labels(examples, tokenizer):
+def tokenize_mcqa_with_labels(examples, tokenizer, completion_only_loss=True):
     """
     Create input_ids and labels where labels are -100 for prompt tokens.
     This gives precise control over which tokens contribute to loss.
     """
     input_ids_list = []
     completion_mask_list = []
+    lengths = []
     
     for question, choices, answer in zip(examples["question"], examples["choices"], examples["answer"]):
         # Get prompt and completion
@@ -107,19 +128,22 @@ def tokenize_mcqa_with_labels(examples, tokenizer):
         
         # Combine tokens
         input_ids = prompt_tokens + completion_tokens
-        
-        # Create labels: -100 for prompt tokens, actual tokens for completion
 
-        # Create attention mask (1 for all real tokens)
-        completion_mask = [0] * len(prompt_tokens) + [1] * len(completion_tokens)
+        # Create attention mask (1 for all real tokens) and 0 for the prompt
+        if completion_only_loss:
+            completion_mask = [0] * len(prompt_tokens) + [1] * len(completion_tokens)
+        else:
+            completion_mask = [1] * len(prompt_tokens) + [1] * len(completion_tokens)
     
         
         input_ids_list.append(input_ids)
         completion_mask_list.append(completion_mask)
+        lengths.append(len(input_ids))
     
     return {
         "input_ids": input_ids_list,
-        "completion_mask": completion_mask_list
+        "completion_mask": completion_mask_list,
+        "lengths": lengths,
     }
 
 
@@ -137,7 +161,7 @@ def get_wandb_id(cfg):
     return wandb_id, resume_mode
 
 
-@hydra.main(config_path="config", config_name="MCQA-text_config.yaml", version_base="1.1")
+@hydra.main(config_path="config", config_name="MCQA-text_config_2.yaml", version_base="1.1")
 def train(cfg: DictConfig):
     random.seed(cfg.environment.seed)
 
@@ -193,15 +217,11 @@ def train(cfg: DictConfig):
         # model = AutoModelForCausalLM.from_pretrained(
         cfg.model.name,
         dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16,
-        attn_implementation="flash_attention_2",
+        # attn_implementation="flash_attention_2",
         load_in_4bit=False,
         load_in_8bit=False,
         full_finetuning=True,  # this is necessary to activate gradiendts and do upcast in some layers
     )
-    # model = model.to(device) # the model is already passed to the device
-    # It seems by default the model with unsloth doesn't have require grad = true, only when using lora it seems
-    for param in model.parameters():
-        param.requires_grad = True
 
     # Tokenizer setup
     # tokenizer = AutoTokenizer.from_pretrained(cfg.model.name)
@@ -238,15 +258,15 @@ def train(cfg: DictConfig):
 
     # Tokenization with instruction formatting
     train_dataset = raw_train_dataset.map(
-        lambda x: tokenize_mcqa_with_labels(x, tokenizer),
+        lambda x: tokenize_mcqa_with_labels(x, tokenizer, cfg.training.completion_only_loss),
         batched=True,
         num_proc=30,
-    )
+    ).filter(lambda x: x["length"] <= 2048, num_proc=40)
     val_dataset = raw_val_dataset.map(
-        lambda x: tokenize_mcqa_with_labels(x, tokenizer),
+        lambda x: tokenize_mcqa_with_labels(x, tokenizer, cfg.training.completion_only_loss),
         batched=True,
         num_proc=30,
-    )
+    ).filter(lambda x: x["length"] <= 2048, num_proc=40)
 
     mmlu_datasets = load_mmlu_datasets(
         cfg.dataset_mmlu[0].name, cfg.dataset_mmlu[0].config, cfg.dataset_mmlu[0].subjects
@@ -294,6 +314,7 @@ def train(cfg: DictConfig):
         push_to_hub=True,
         hub_model_id=cfg.model.hub_model_id,
         max_seq_length=2048,
+        completion_only_loss=cfg.training.completion_only_loss, # This is for TRL version 0.18.1
     )
 
     trainer = IFSFTTrainer(

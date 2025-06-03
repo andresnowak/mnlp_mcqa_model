@@ -5,9 +5,9 @@ environment:
   seed: 42
 
 model:
-  # name: andresnowak/Qwen3-0.6B-instruction-finetuned
-  name: Qwen/Qwen3-0.6B-Base
-  hub_model_id: andresnowak/Qwen3-0.6B-MNLP_mcqa_model_text
+  name: andresnowak/Qwen3-0.6B-instruction-finetuned_v2
+  # name: Qwen/Qwen3-0.6B-Base
+  hub_model_id: andresnowak/Qwen3-0.6B-MNLP_mcqa_model_text_2
 
 dataset_train:
   - name: andresnowak/MNLP_MCQA_dataset
@@ -17,7 +17,7 @@ dataset_train:
     subset_name: ScienceQA
     config: train
   - name: andresnowak/MNLP_MCQA_dataset
-    subset_name: mmlu-auxiliary-train-auto-labelled
+    subset_name: andresnowak/mmlu-auxiliary-train-10-choices
     config: train
   - name: andresnowak/MNLP_MCQA_dataset
     subset_name: ai2_arc_challenge
@@ -76,16 +76,16 @@ training:
   per_device_train_batch_size: 2
   per_device_eval_batch_size: 2
   gradient_accumulation_steps: 32 # to get effective 64
-  num_train_epochs: 2
+  num_train_epochs: 1
   weight_decay: 0.00
   warmup_ratio: 0.1
   max_grad_norm: 0.5
   linear_layers_max_grad_norm: 1.0
-  completion_only_loss: False
+  completion_only_loss: True
 
 wandb:
   project: MNLP-qwen-instruction-finetuning
-  name: qwen-instruction-finetuning-MCQA-text
+  name: qwen-instruction-finetuning-MCQA-text_2
 
 
 # from datasets import interleave_datasets

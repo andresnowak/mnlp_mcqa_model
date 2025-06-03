@@ -143,7 +143,7 @@ def tokenize_mcqa_with_labels(examples, tokenizer, completion_only_loss=True):
     return {
         "input_ids": input_ids_list,
         "completion_mask": completion_mask_list,
-        "lengths": lengths,
+        "length": lengths,
     }
 
 
@@ -261,7 +261,7 @@ def train(cfg: DictConfig):
         lambda x: tokenize_mcqa_with_labels(x, tokenizer, cfg.training.completion_only_loss),
         batched=True,
         num_proc=30,
-    ).filter(lambda x: x["length"] <= 2048, num_proc=40)
+    ).filter(lambda x: x["length"] <= 2048, num_proc=40).shuffle(cfg.environment.seed)
     val_dataset = raw_val_dataset.map(
         lambda x: tokenize_mcqa_with_labels(x, tokenizer, cfg.training.completion_only_loss),
         batched=True,
@@ -326,7 +326,7 @@ def train(cfg: DictConfig):
         # dataset_text_field="text",
         mmlu_datasets=mmlu_datasets,
         eval_dataset_name="training_validation_split", 
-        data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
+        # data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
     )
 
     # trainer.train(resume_from_checkpoint=last_checkpoint)

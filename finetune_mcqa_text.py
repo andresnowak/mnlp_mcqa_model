@@ -229,8 +229,8 @@ def train(cfg: DictConfig):
         tokenizer.eos_token if tokenizer.pad_token is None else tokenizer.pad_token
     )
     tokenizer.chat_template = None
-    tokenizer.padding_side = "left"  # Critical for Flash Attention compatibility (It seems Qwen3 Flash attention needs this <pad> value, instead of value <pad>)
-    tokenizer.max_length = 2048
+    # tokenizer.padding_side = "left"  # Critical for Flash Attention compatibility (It seems Qwen3 Flash attention needs this <pad> value, instead of value <pad>)
+    # tokenizer.max_length = 2048
 
 
     # ---- Load training dataset ----- 

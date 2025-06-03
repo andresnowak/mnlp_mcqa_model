@@ -99,7 +99,7 @@ def format_mcqa_answer(answer: str, choices: list[str], tokenizer) -> str:
     # Check if answer is in valid range
     if choice_idx < 0 or choice_idx >= len(choices):
         raise ValueError(
-            f"Answer '{answer}' invalid for {len(choices)} choices (A-{chr(ord('A') + len(choices) - 1})"
+            f"Answer '{answer}' invalid for {len(choices)} choices (A-{chr(ord('A') + len(choices) - 1)}"
         )
     
     # Format with EOS token to stop generation

@@ -246,7 +246,7 @@ def train(cfg: DictConfig):
     tokenizer = AutoTokenizer.from_pretrained(cfg.model.name)
     model = AutoModelForCausalLM.from_pretrained(cfg.model.name,
         torch_dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16,
-        # attn_implementation="flash_attention_2"
+        attn_implementation="flash_attention_2"
         )
 
     # Enable gradient computation

@@ -220,8 +220,13 @@ def train(cfg: DictConfig):
         attn_implementation="flash_attention_2",
         load_in_4bit=False,
         load_in_8bit=False,
-        full_finetuning=True,  # this is necessary to activate gradiendts and do upcast in some layers
+        # full_finetuning=True,  # this is necessary to activate gradiendts and do upcast in some layers
     )
+    # Just because full_finetuning has problems with different versions of torch and unsloth and triton
+    # model = model.to(device) # the model is already passed to the deviceAdd commentMore actions
+    # It seems by default the model with unsloth doesn't have require grad = true, only when using lora it seems
+    for param in model.parameters():
+        param.requires_grad = True
 
     # Tokenizer setup
     # tokenizer = AutoTokenizer.from_pretrained(cfg.model.name)

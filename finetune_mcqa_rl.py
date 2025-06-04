@@ -99,13 +99,14 @@ def tokenize_mcqa_with_labels(examples, tokenizer):
 
 
 def extract_predicted_answer(output_text):
-    """Extract the predicted answer (A, B, C, or D) from model output"""
-    # Look for the first occurrence of A., B., C., or D. in the output
-    match = re.search(r"\b([A-D])\.", output_text)
+    """Extract the predicted answer (A to Z) from model output"""
+    # this is a simple method because the model we are going to use was trained to just output letter. answer
+    # Look for the first occurrence of letter.
+    match = re.search(r"\b([A-Z])\.", output_text)
     if match:
         return match.group(1)
-    # Fallback: look for standalone A, B, C, or D
-    match = re.search(r"\b([A-D])\b", output_text)
+    # Fallback: look for standalone letter
+    match = re.search(r"\b([A-Z])\b", output_text)
     return match.group(1) if match else None
 
 
@@ -115,7 +116,7 @@ def mcqa_reward_function(prompts, completions, choices, correct_answer_letter, *
 
     for completion, choice, correct_answer in zip(completions, choices, correct_answer_letter):
         predicted_answer = extract_predicted_answer(completion)
-        if predicted_answer and predicted_answer in ["A", "B", "C", "D"]:
+        if predicted_answer:
             reward = 1.0 if predicted_answer == correct_answer else -1.0
         else:
             # Penalize invalid responses

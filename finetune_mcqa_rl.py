@@ -34,7 +34,7 @@ print(f"Available gpus {torch.cuda.device_count()}")
 logger = logging.getLogger(__name__)
 
 # Define paths to your template folders
-template_dir = f"{os.getcwd()}/templates/MCQA"  # seems jinja wants the absolute path
+template_dir = f"{os.getcwd()}/templates/MCQA_RL_text"  # seems jinja wants the absolute path
 template_files = [f for f in os.listdir(template_dir) if f.endswith(".jinja")]
 jinja_env = Environment(loader=FileSystemLoader(template_dir))
 

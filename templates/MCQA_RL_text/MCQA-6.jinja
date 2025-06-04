@@ -1,0 +1,14 @@
+Question: {{ question }}
+
+Answer Choices:
+{% for choice_text in choices_list %}
+ -> {{ choice_text }}
+{% endfor %}
+
+Please choose the most appropriate answer.
+Use this exact format in your response:
+[Letter]. [Text of the answer]
+
+For example: D. Water
+
+Your answer is:

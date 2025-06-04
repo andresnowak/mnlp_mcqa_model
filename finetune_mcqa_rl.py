@@ -101,12 +101,12 @@ def tokenize_mcqa_with_labels(examples, tokenizer):
 def extract_predicted_answer(output_text):
     """Extract the predicted answer (A to Z) from model output"""
     # this is a simple method because the model we are going to use was trained to just output letter. answer
-    # Look for the first occurrence of letter.
+    # Look for the first occurrence of "letter."
     match = re.search(r"\b([A-Z])\.", output_text)
     if match:
         return match.group(1)
     # Fallback: look for standalone letter
-    match = re.search(r"\b([A-Z])\b", output_text)
+    # match = re.search(r"\b([A-Z])\b", output_text)
     return match.group(1) if match else None
 
 

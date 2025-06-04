@@ -291,7 +291,7 @@ def train(cfg: DictConfig):
         max_grad_norm=cfg.training.max_grad_norm,
         warmup_ratio=cfg.training.warmup_ratio,
         eval_strategy="steps",
-        eval_steps=3000,
+        eval_steps=1500,
         logging_steps=10,
         report_to=cfg.training.report_to,
         save_strategy="steps",

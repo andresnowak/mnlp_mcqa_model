@@ -102,22 +102,35 @@ def extract_predicted_answer(output_text):
     """Extract the predicted answer (A to Z) from model output"""
     # this is a simple method because the model we are going to use was trained to just output letter. answer
     # Look for the first occurrence of "letter."
-    match = re.search(r"\b([A-Z])\.", output_text)
+    match = re.search(r"\b([A-Z])\.\s*", output_text)
     if match:
-        return match.group(1)
+        letter = match.group(1)  # "C"
+        position = match.end()        # end index of the match
+        return letter, position
     # Fallback: look for standalone letter
     # match = re.search(r"\b([A-Z])\b", output_text)
-    return match.group(1) if match else None
+    return None, 0
 
 
 def mcqa_reward_function(prompts, completions, choices, correct_answer_letter, **kwargs):
     """Compute rewards for MCQA responses"""
     rewards = []
 
-    for completion, choice, correct_answer in zip(completions, choices, correct_answer_letter):
-        predicted_answer = extract_predicted_answer(completion)
+    for completion, choice_list, correct_answer in zip(completions, choices, correct_answer_letter):
+        predicted_answer, end_position = extract_predicted_answer(completion)
         if predicted_answer:
-            reward = 1.0 if predicted_answer == correct_answer else -1.0
+            correct_index = ord(correct_answer) - ord("A")
+            correct_answer_text = choice_list[correct_index].lower()
+            if end_position + len(correct_answer_text) > len(completion):
+                predicted_answer_text = ""
+            else:
+                predicted_answer_text = completion[
+                    end_position : end_position + len(correct_answer_text)
+                ].lower()
+            if predicted_answer == correct_answer:
+                reward = 2.0 if correct_answer_text == predicted_answer_text else 1.0
+            else:
+                reward = -1.0
         else:
             # Penalize invalid responses
             reward = -1.0

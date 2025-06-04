@@ -188,7 +188,7 @@ def get_wandb_id(cfg):
 
 
 @hydra.main(
-    config_path="config", config_name="MCQA-RL_2.yaml", version_base="1.1"
+    config_path="config", config_name="MCQA-RL_V2.yaml", version_base="1.1"
 )
 def train(cfg: DictConfig):
     """Main training function"""

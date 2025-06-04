@@ -97,7 +97,26 @@ def tokenize_mcqa_with_labels(examples, tokenizer):
             "correct_answer_letter": answer_list
         }
 
+ANSWER_PATTERNS = [
+    re.compile(p, re.IGNORECASE)
+    for p in [
+        r"final answer:\s*([A-Z])\.?",  # "final answer: x"
+        r"final answer is:\s*([A-Z])\.?",  # "final answer is: x"
+        r"answer:\s*([A-Z])\.?",  # "answer: y"
+        r"correct (?:option|answer) is\s*([A-Z])\.?",  # "correct option is z"
+        r"option\s*([A-Z])\.?",  # "option m"
+        r"choice\s*([A-Z])\.?",  # "choice n"
+    ]
+]
 
+ANSWER_PATTERNS_GOOD = [
+    re.compile(p)
+    for p in [
+        r"Final answer:\s*([A-Z])\.?",  # "final answer: x"
+        r"Answer:\s*([A-Z])\.?",  # "answer: y"
+        r"\b([A-Z])\.",  # "x."
+    ]
+]
 
 def extract_predicted_answer(output_text):
     """
@@ -111,30 +130,14 @@ def extract_predicted_answer(output_text):
     # Normalize text: remove extra spaces, make lowercase for case-insensitive matching
     normalized_text = re.sub(r"\s+", " ", output_text.strip())
 
-    # List of possible answer patterns in priority order
-    answer_patterns = [
-        r"final answer:\s*([A-Z])\.?",  # "final answer: x"
-        r"final answer is:\s*([A-Z])\.?",  # "final answer is: x"
-        r"answer:\s*([A-Z])\.?",  # "answer: y"
-        r"correct (?:option|answer) is\s*([A-Z])\.?",  # "correct option is z"
-        r"option\s*([A-Z])\.?",  # "option m"
-        r"choice\s*([A-Z])\.?",  # "choice n"
-    ]
-
-    answer_patterns_good = [
-        r"Final answer:\s*([A-Z])\.?",  # "final answer: x"
-        r"Answer:\s*([A-Z])\.?",  # "answer: y"
-        r"\b([A-Z])\.",  # "x."
-    ]
-
-    for pattern in answer_patterns_good:
+    for pattern in ANSWER_PATTERNS_GOOD:
         match = re.search(pattern, normalized_text)
         if match:
             extracted = match.group(1).upper()  # Ensure uppercase (A-Z)
             if extracted.isalpha() and len(extracted) == 1:  # Must be A-Z
                 return extracted, True
 
-    for pattern in answer_patterns:
+    for pattern in ANSWER_PATTERNS:
         match = re.search(pattern, normalized_text)
         if match:
             extracted = match.group(1).upper()  # Ensure uppercase (A-Z)

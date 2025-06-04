@@ -214,7 +214,7 @@ def train(cfg: DictConfig):
     )
     tokenizer.chat_template = None
     tokenizer.padding_side = "left"
-    tokenizer.max_length = 2048
+    # tokenizer.max_length = 2048
 
     # Load datasets
     raw_train_dataset = concatenate_datasets(

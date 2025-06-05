@@ -1,0 +1,81 @@
+defaults:
+  - override hydra/job_logging: disabled
+
+environment:
+  seed: 42
+  use_template: True # random templates
+
+model:
+  name: Qwen/Qwen3-0.6B-Base
+  hub_model_id: andresnowak/Qwen3-0.6B-CoT
+
+# Hardcoded subset dataset is just to make the model answer that is from allenai tulu basically
+dataset:
+  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+    config: codeAlpaca
+    size: 0.2
+  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+    config: noRobots
+    size: 0.3
+  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+    config: openMathGsm8k
+    size: 0.7
+  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+    config: codeV2
+    size: 0.2
+  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+    config: flanV2
+    size: 0.3
+  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+    config: ifData
+    size: 0.3
+  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+    config: mathAlgebra 
+    size: 0.7
+  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+    config: mathGrade
+    size: 0.7
+  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+    config: oasst1
+    size: 0.1
+  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+    config: sciriff
+    size: 0.2
+  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+    config: tableGpt
+    size: 0.0
+  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+    config: tirMath
+    size: 0.6
+  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+    config: wildChat
+    size: 0.2
+  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+    config: mathV5
+    size: 0.7
+
+dataset_evaluation:
+  - name: cais/mmlu
+    config: validation
+    subjects: ["abstract_algebra", "anatomy", "astronomy", "college_biology", "college_chemistry", "college_computer_science", "college_mathematics", "college_physics", "computer_security", "conceptual_physics", "electrical_engineering", "elementary_mathematics", "high_school_biology",  "high_school_chemistry", "high_school_computer_science", "high_school_mathematics", "high_school_physics", "high_school_statistics", "machine_learning"]
+
+training:
+  output_dir: ./output
+  logging_dir: ./logs
+  resume_dir: None
+  report_to: wandb
+  learning_rate: 0.00001 # Default value instead of 5e-6
+  per_device_train_batch_size: 4
+  per_device_eval_batch_size: 4
+  gradient_accumulation_steps: 32 # to get effective 128
+  num_train_epochs: 2
+  weight_decay: 0.00
+  warmup_ratio: 0.03
+  max_grad_norm: 1.0
+  # linear_layers_max_grad_norm: 0.5
+  lr_scheduler: "linear"
+  completion_only_loss: True
+
+wandb:
+  project: MNLP-qwen-instruction-finetuning
+  name: qwen-CoT

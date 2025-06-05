@@ -135,7 +135,7 @@ def get_wandb_id(cfg):
     return wandb_id, resume_mode
 
 
-@hydra.main(config_path="config", config_name="IF-config_v2.yml", version_base="1.1")
+@hydra.main(config_path="config", config_name="IF-config_v2_2.yml", version_base="1.1")
 def train(cfg: DictConfig):
     random.seed(cfg.environment.seed)
 

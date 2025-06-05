@@ -160,6 +160,7 @@ class MCQATrainer(Trainer):
         metrics = {f"{metric_key_prefix}_accuracy": overall_acc}
         metrics.update({f"{metric_key_prefix}_accuracy_{ds}": acc for ds, acc in acc_by_ds.items()})
         self.log(metrics)
+        model.train()
         return metrics
     
 # ------ Instruction finetuning trainer -------

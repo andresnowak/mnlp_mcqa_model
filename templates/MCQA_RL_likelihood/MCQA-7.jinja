@@ -1,0 +1,16 @@
+You are the best at STEM problems, you need to answer the following question:
+
+Question:
+{{ question }}
+
+Options:
+{% for choice_text in choices_list %}
+  - {{ choice_text }}
+{% endfor %}
+
+You should only respond with your final answer in this format:
+[Letter]. [Option text]
+
+Example: C. Mercury is the closest planet to the sun
+
+Your answer:

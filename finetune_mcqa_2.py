@@ -129,19 +129,6 @@ def train(cfg: DictConfig):
         ]
     )
 
-    # we only want examples with only 4 options, as the evaluation will only be done with this method so we can assume this.
-    def datasets_with_4_options(example):
-        return len(example["choices"]) == 4
-
-    raw_train_dataset = raw_train_dataset.filter(
-        lambda x: datasets_with_4_options(x),
-        num_proc=10,
-    )
-    raw_val_dataset = raw_val_dataset.filter(
-        lambda x: datasets_with_4_options(x),
-        num_proc=10,
-    )
-
     raw_train_dataset = raw_train_dataset.shuffle(seed=cfg.environment.seed)
     raw_val_dataset = raw_val_dataset.shuffle(seed=cfg.environment.seed)
 

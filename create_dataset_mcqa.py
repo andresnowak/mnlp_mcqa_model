@@ -249,7 +249,7 @@ def join_datasets(config):
 
         if dataset_info["name"] == "openlifescienceai/medmcqa" and dataset_info["split"] == "train":
             data = data.shuffle(seed=42).select(
-                range(24_000)
+                range(32_000)
             )
 
         datasets_to_combine[f"{dataset_info['subset_name']}|{split}"] = data

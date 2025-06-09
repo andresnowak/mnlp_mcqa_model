@@ -69,7 +69,7 @@ import-ipynb==0.1.4
 importlib_metadata==8.7.0
 ipykernel==6.29.5
 ipython==8.31.0
-ipywidgets==8.1.5
+ipywidgets==8.*
 isoduration==20.11.0
 jedi==0.19.2
 Jinja2==3.1.5

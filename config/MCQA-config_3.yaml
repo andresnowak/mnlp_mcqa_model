@@ -20,6 +20,9 @@ dataset_train:
     subset_name: mmlu-auxiliary-train-auto-labelled
     config: train
   - name: andresnowak/MNLP_MCQA_dataset
+    subset_name: mmlu_auxiliary_train_stem_10_choices
+    config: train
+  - name: andresnowak/MNLP_MCQA_dataset
     subset_name: ai2_arc_challenge
     config: train
   - name: andresnowak/MNLP_MCQA_dataset
@@ -73,7 +76,7 @@ training:
   gradient_accumulation_steps: 32 # to get effective 64
   num_train_epochs: 2
   weight_decay: 0.00
-  warmup_ratio: 0.04
+  warmup_ratio: 0.08
   max_grad_norm: 0.5
   linear_layers_max_grad_norm: 1.0
 

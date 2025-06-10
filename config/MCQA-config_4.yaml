@@ -20,6 +20,9 @@ dataset_train:
     subset_name: mmlu-auxiliary-train-auto-labelled
     config: train
   - name: andresnowak/MNLP_MCQA_dataset
+    subset_name: mmlu_auxiliary_train_stem_10_choices
+    config: train
+  - name: andresnowak/MNLP_MCQA_dataset
     subset_name: ai2_arc_challenge
     config: train
   - name: andresnowak/MNLP_MCQA_dataset

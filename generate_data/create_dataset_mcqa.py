@@ -8,7 +8,6 @@ import random
 from tqdm import tqdm
 
 from src.utils import load_config
-from src.env_secrets import HF_TOKEN
 
 
 def MMLU_train_auxiliar(data: Dataset, data_info: dict, stem_subsets: list[str]):
@@ -247,9 +246,9 @@ def join_datasets(config):
 
         data = Dataset.from_list(data)
 
-        if dataset_info["name"] == "openlifescienceai/medmcqa" and dataset_info["split"] == "train":
+        if "size" in dataset_info:
             data = data.shuffle(seed=42).select(
-                range(32_000)
+                range(dataset_info["size"])
             )
 
         datasets_to_combine[f"{dataset_info['subset_name']}|{split}"] = data
@@ -267,8 +266,6 @@ if __name__ == "__main__":
         default="config/MCQA_datasets_join.yaml",
         help="Path to the configuration YAML file.",
     )
-
-    login(token=HF_TOKEN)
 
     args = parser.parse_args()
     config = load_config(args.config)

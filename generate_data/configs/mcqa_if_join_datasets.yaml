@@ -1,5 +1,5 @@
 push_to_hub: true
-hub_dataset_name: "andresnowak/MNLP_M2_mcqa_dataset"
+hub_dataset_name: "andresnowak/MNLP_M3_mcqa_dataset"
 
 datasets:
   - name: andresnowak/MNLP_MCQA_dataset
@@ -10,6 +10,10 @@ datasets:
     config: [train, validation, test]
   - name: andresnowak/MNLP_MCQA_dataset
     subset_name: mmlu-auxiliary-train-auto-labelled
+    config: [train]
+  - name: andresnowak/MNLP_MCQA_dataset
+    subset_name: mmlu_auxiliary_train_stem_10_choices
+    type: MCQA
     config: [train]
   - name: andresnowak/MNLP_MCQA_dataset
     subset_name: mmlu

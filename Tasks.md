@@ -22,7 +22,16 @@
 - [x] Try RL method for MCQA
   - Currently trying
   - Now test the model
-- [ ] Test again the models trying different prompts and using the different completions
+- [x] Test again the models trying different prompts and using the different completions
   - Doing this right now
 - [x] Create syntethic dataset with MMLU for adding extra choices
-- [ ] Try instruction finetuning doing loss only on the completion
+- [x] Try instruction finetuning doing loss only on the completion
+  - This model feels better when talking to it and ahs better CoT, but still this models have reduced the CoT of the original base model, the base model is still better
+    - Right now what im seeing is we know the Qwen3 model had reasoning in its pretraining, so in the instruction finetuning we have to be careful with which subsets of datasets we choose as we can remove its original abilities.
+- [x] Try RL method on the instruction finetuned v2 model
+- [x] Do MCQA likelihood with 10 options
+- [ ] Choose final model to send
+- [ ] Fix code 
+- [x] Fix requirements_2.txt
+- [ ] Fix overall values in paper (as they where counting MCQA evals)
+- [ ] Fix still the explanation in the paper

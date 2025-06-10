@@ -161,7 +161,7 @@ def get_wandb_id(cfg):
     return wandb_id, resume_mode
 
 
-@hydra.main(config_path="config", config_name="MCQA-text_config.yaml", version_base="1.1")
+@hydra.main(config_path="config", config_name="MCQA-text_config_2.yaml", version_base="1.1")
 def train(cfg: DictConfig):
     random.seed(cfg.environment.seed)
 

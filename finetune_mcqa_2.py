@@ -58,7 +58,7 @@ def mcqa_collatefn(batch):
     }
 
 
-@hydra.main(config_path="config", config_name="MCQA-config_3.yaml", version_base="1.1")
+@hydra.main(config_path="config", config_name="MCQA-config_2.yaml", version_base="1.1")
 def train(cfg: DictConfig):
     # Resume from checkpoint
     # Look for a latest checkpoint in the output directory
@@ -129,6 +129,19 @@ def train(cfg: DictConfig):
         ]
     )
 
+    # we only want examples with only 4 options, as the evaluation will only be done with this method so we can assume this.
+    def datasets_with_4_options(example):
+        return len(example["choices"]) == 4
+
+    raw_train_dataset = raw_train_dataset.filter(
+        lambda x: datasets_with_4_options(x),
+        num_proc=10,
+    )
+    raw_val_dataset = raw_val_dataset.filter(
+        lambda x: datasets_with_4_options(x),
+        num_proc=10,
+    )
+
     raw_train_dataset = raw_train_dataset.shuffle(seed=cfg.environment.seed)
     raw_val_dataset = raw_val_dataset.shuffle(seed=cfg.environment.seed)
 
@@ -148,6 +161,8 @@ def train(cfg: DictConfig):
 
     # model = model.to(device) # the model is already passed to the deviceAdd commentMore actions
     # It seems by default the model with unsloth doesn't have require grad = true, only when using lora it seems
+    for param in model.parameters():
+        param.requires_grad = True
 
     # Tokenizer setup
     # tokenizer = AutoTokenizer.from_pretrained(cfg.model.name)
@@ -170,7 +185,7 @@ def train(cfg: DictConfig):
         max_grad_norm=cfg.training.max_grad_norm,
         warmup_ratio=cfg.training.warmup_ratio,
         eval_strategy="steps",
-        eval_steps=500,
+        eval_steps=300,
         logging_steps=10,
         report_to=cfg.training.report_to,
         save_strategy="steps",

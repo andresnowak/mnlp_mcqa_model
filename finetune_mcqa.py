@@ -58,7 +58,7 @@ def mcqa_collatefn(batch):
     }
 
 
-@hydra.main(config_path="config", config_name="MCQA-config_2.yaml", version_base="1.1")
+@hydra.main(config_path="config", config_name="MCQA-config.yaml", version_base="1.1")
 def train(cfg: DictConfig):
     # Resume from checkpoint
     # Look for a latest checkpoint in the output directory
@@ -153,10 +153,10 @@ def train(cfg: DictConfig):
         # model = AutoModelForCausalLM.from_pretrained(
         cfg.model.name,
         dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16,
-        attn_implementation="flash_attention_2",
+        # attn_implementation="flash_attention_2",
         load_in_4bit=False,
         load_in_8bit=False,
-        # full_finetuning=True,  # this is necessary to activate gradiendts and do upcast in some layers
+        full_finetuning=True,  # this is necessary to activate gradiendts and do upcast in some layers
     )
 
     # model = model.to(device) # the model is already passed to the deviceAdd commentMore actions

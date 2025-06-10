@@ -20,9 +20,10 @@ from datetime import datetime
 import os
 from unsloth import unsloth_train
 # unsloth_train fixes gradient_accumulation_steps
+from jinja2 import Environment, FileSystemLoader, ChoiceLoader
 
 from src.trainers import MCQATrainer
-from src.custom_datasets import MCQADatasetClassification
+from src.custom_datasets import MCQADatasetClassification_2, MCQADatasetClassification
 
 device = (
     "cuda"
@@ -33,6 +34,12 @@ device = (
 )
 print(f"Available gpus {torch.cuda.device_count()}")
 logger = logging.getLogger(__name__)
+
+
+# Define paths to your template folders
+template_dir = f"{os.getcwd()}/templates/MCQA"  # seems jinja wants the absolute path
+template_files = [f for f in os.listdir(template_dir) if f.endswith(".jinja")]
+jinja_env = Environment(loader=FileSystemLoader(template_dir))
 
 
 def get_wandb_id(cfg):
@@ -58,7 +65,7 @@ def mcqa_collatefn(batch):
     }
 
 
-@hydra.main(config_path="config", config_name="MCQA-config_3.yaml", version_base="1.1")
+@hydra.main(config_path="config", config_name="MCQA-config_4.yaml", version_base="1.1")
 def train(cfg: DictConfig):
     # Resume from checkpoint
     # Look for a latest checkpoint in the output directory
@@ -132,7 +139,7 @@ def train(cfg: DictConfig):
     raw_train_dataset = raw_train_dataset.shuffle(seed=cfg.environment.seed)
     raw_val_dataset = raw_val_dataset.shuffle(seed=cfg.environment.seed)
 
-    train_dataset = MCQADatasetClassification(raw_train_dataset)
+    train_dataset = MCQADatasetClassification_2(raw_train_dataset, template_files, jinja_env)
     val_dataset = MCQADatasetClassification(raw_val_dataset)
 
     # Model
@@ -170,7 +177,7 @@ def train(cfg: DictConfig):
         max_grad_norm=cfg.training.max_grad_norm,
         warmup_ratio=cfg.training.warmup_ratio,
         eval_strategy="steps",
-        eval_steps=500,
+        eval_steps=100,
         logging_steps=10,
         report_to=cfg.training.report_to,
         save_strategy="steps",

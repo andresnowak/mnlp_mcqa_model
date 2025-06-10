@@ -9,3 +9,4 @@ outputs
 data
 unsloth_compiled_cache
 *secrets_env.py
+*artifacts

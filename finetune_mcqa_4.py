@@ -163,7 +163,7 @@ def train(cfg: DictConfig):
     )
     tokenizer.chat_template = None
     tokenizer.padding_side = "left"  # Critical for Flash Attention compatibility (It seems Qwen3 Flash attention needs this <pad> value, instead of value <pad>)
-    tokenizer.max_length = 2048
+    # tokenizer.max_length = 2048
 
     # Training setup
     training_args = SFTConfig(

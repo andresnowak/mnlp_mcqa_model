@@ -7,7 +7,8 @@ environment:
 model:
   # name: andresnowak/Qwen3-0.6B-instruction-finetuned
   name: Qwen/Qwen3-0.6B-Base
-  hub_model_id: andresnowak/Qwen3-0.6B-mcqa_model_2
+  hub_model_id: andresnowak/Qwen3-0.6B-mcqa_model_2 
+  # MNLP_M3_mcqa_model
 
 dataset_train:
   - name: andresnowak/MNLP_MCQA_dataset

@@ -1,4 +1,3 @@
-
 # Save options
 push_to_hub: true
 hub_dataset_name: "andresnowak/MNLP_MCQA_dataset"

@@ -11,46 +11,46 @@ model:
 
 # Hardcoded subset dataset is just to make the model answer that is from allenai tulu basically
 dataset:
-  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+  - name: andresnowak/MNLP_M3_mcqa_dataset
     config: codeAlpaca
     size: 0.2
-  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+  - name: andresnowak/MNLP_M3_mcqa_dataset
     config: noRobots
     size: 0.3
-  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+  - name: andresnowak/MNLP_M3_mcqa_dataset
     config: openMathGsm8k
     size: 0.7
-  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+  - name: andresnowak/MNLP_M3_mcqa_dataset
     config: codeV2
     size: 0.2
-  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+  - name: andresnowak/MNLP_M3_mcqa_dataset
     config: flanV2
     size: 0.3
-  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+  - name: andresnowak/MNLP_M3_mcqa_dataset
     config: ifData
     size: 0.3
-  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+  - name: andresnowak/MNLP_M3_mcqa_dataset
     config: mathAlgebra 
     size: 0.7
-  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+  - name: andresnowak/MNLP_M3_mcqa_dataset
     config: mathGrade
     size: 0.7
-  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+  - name: andresnowak/MNLP_M3_mcqa_dataset
     config: oasst1
     size: 0.1
-  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+  - name: andresnowak/MNLP_M3_mcqa_dataset
     config: sciriff
     size: 0.2
-  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+  - name: andresnowak/MNLP_M3_mcqa_dataset
     config: tableGpt
     size: 0.0
-  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+  - name: andresnowak/MNLP_M3_mcqa_dataset
     config: tirMath
     size: 0.6
-  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+  - name: andresnowak/MNLP_M3_mcqa_dataset
     config: wildChat
     size: 0.2
-  - name: andresnowak/Instruction-finetuning-mixture-mnlp
+  - name: andresnowak/MNLP_M3_mcqa_dataset
     config: mathV5
     size: 0.7
 

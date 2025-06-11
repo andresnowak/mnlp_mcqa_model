@@ -200,7 +200,7 @@ def train(cfg: DictConfig):
     )
 
     # trainer.train(resume_from_checkpoint=last_checkpoint)
-    unsloth_train(trainer)
+    unsloth_train(trainer, resume_from_checkpoint=last_checkpoint)
     wandb.finish()
 
     # Push final model

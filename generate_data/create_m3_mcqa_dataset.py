@@ -8,7 +8,6 @@ import random
 from tqdm import tqdm
 
 from src.utils import load_config
-from src.env_secrets import HF_TOKEN
 
 def join_datasets(config):
 
@@ -54,13 +53,21 @@ if __name__ == "__main__":
         default="config/mcqa_if_join_datasets.yaml",
         help="Path to the configuration YAML file.",
     )
-
-    login(token=HF_TOKEN)
+    parser.add_argument(
+        "--hub-dataset-name",  # Fixed: hyphen instead of underscore for CLI convention
+        type=str,
+        default=None,  # Explicit None instead of empty default
+        help="Override the dataset name for Hugging Face Hub",
+    )
 
     args = parser.parse_args()
     config = load_config(args.config)
 
     combined_dataset, dataset_splits = join_datasets(config)
+
+    # Override config with CLI argument if provided
+    if args.hub_dataset_name is not None:
+        config["hub_dataset_name"] = args.hub_dataset_name
 
     # Save or push to Hub
     if config.get("push_to_hub", False):

@@ -64,6 +64,7 @@ training:
   logging_dir: ./logs
   resume_dir: None
   report_to: wandb
+  push_to_hub: true
   learning_rate: 0.00001 # Default value instead of 5e-6
   per_device_train_batch_size: 4
   per_device_eval_batch_size: 4

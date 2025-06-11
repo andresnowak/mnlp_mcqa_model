@@ -146,8 +146,7 @@ def train(cfg: DictConfig):
         full_finetuning=True,  # this is necessary to activate gradiendts and do upcast in some layers
     )
 
-    # model = model.to(device) # the model is already passed to the deviceAdd commentMore actions
-    # It seems by default the model with unsloth doesn't have require grad = true, only when using lora it seems
+    # model = model.to(device) # the model is already passed to the device
 
     # Tokenizer setup
     # tokenizer = AutoTokenizer.from_pretrained(cfg.model.name)

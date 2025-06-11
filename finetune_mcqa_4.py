@@ -165,8 +165,6 @@ def train(cfg: DictConfig):
     tokenizer.padding_side = "left"  # Critical for Flash Attention compatibility (It seems Qwen3 Flash attention needs this <pad> value, instead of value <pad>)
     # tokenizer.max_length = 2048
 
-    print(cfg.training.push_to_hub)
-
     # Training setup
     training_args = SFTConfig(
         output_dir=cfg.training.output_dir,
@@ -202,7 +200,7 @@ def train(cfg: DictConfig):
     )
 
     # trainer.train(resume_from_checkpoint=last_checkpoint)
-    unsloth_train(trainer, resume_from_checkpoint=last_checkpoint)
+    unsloth_train(trainer)
     wandb.finish()
 
     # Push final model

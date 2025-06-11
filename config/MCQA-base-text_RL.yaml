@@ -88,7 +88,7 @@ training:
 
 wandb:
   project: MNLP-qwen-instruction-finetuning
-  name: qwen-instruction-finetuning-MCQA-RL
+  name: qwen-MCQA-text-RL
 
 
 # from datasets import interleave_datasets

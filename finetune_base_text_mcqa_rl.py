@@ -34,7 +34,7 @@ print(f"Available gpus {torch.cuda.device_count()}")
 logger = logging.getLogger(__name__)
 
 # Define paths to your template folders
-template_dir = f"{os.getcwd()}/templates/MCQA_RL_text"  # seems jinja wants the absolute path
+template_dir = f"{os.getcwd()}/templates/MCQA"  # seems jinja wants the absolute path
 template_files = [f for f in os.listdir(template_dir) if f.endswith(".jinja")]
 jinja_env = Environment(loader=FileSystemLoader(template_dir))
 
@@ -99,38 +99,24 @@ def tokenize_mcqa_with_labels(examples, tokenizer):
 
 
 def extract_predicted_answer(output_text):
-    """Extract the predicted answer (A to Z) from model output"""
-    # this is a simple method because the model we are going to use was trained to just output letter. answer
-    # Look for the first occurrence of "letter."
-    match = re.search(r"\b([A-Z])\.\s*", output_text)
+    """Extract the predicted answer (A, B, C, or D) from model output"""
+    # Look for the first occurrence of A., B., C., or D. in the output
+    match = re.search(r"\b([A-D])\.", output_text)
     if match:
-        letter = match.group(1)  # "C"
-        position = match.end()        # end index of the match
-        return letter, position
-    # Fallback: look for standalone letter
-    # match = re.search(r"\b([A-Z])\b", output_text)
-    return None, 0
+        return match.group(1)
+    # Fallback: look for standalone A, B, C, or D
+    match = re.search(r"\b([A-D])\b", output_text)
+    return match.group(1) if match else None
 
 
 def mcqa_reward_function(prompts, completions, choices, correct_answer_letter, **kwargs):
     """Compute rewards for MCQA responses"""
     rewards = []
 
-    for completion, choice_list, correct_answer in zip(completions, choices, correct_answer_letter):
-        predicted_answer, end_position = extract_predicted_answer(completion)
-        if predicted_answer:
-            correct_index = ord(correct_answer) - ord("A")
-            correct_answer_text = choice_list[correct_index].lower()
-            if end_position + len(correct_answer_text) > len(completion):
-                predicted_answer_text = ""
-            else:
-                predicted_answer_text = completion[
-                    end_position : end_position + len(correct_answer_text)
-                ].lower()
-            if predicted_answer == correct_answer:
-                reward = 2.0 if correct_answer_text == predicted_answer_text else 1.0
-            else:
-                reward = -1.0
+    for completion, choice, correct_answer in zip(completions, choices, correct_answer_letter):
+        predicted_answer = extract_predicted_answer(completion)
+        if predicted_answer and predicted_answer in ["A", "B", "C", "D"]:
+            reward = 1.0 if predicted_answer == correct_answer else -1.0
         else:
             # Penalize invalid responses
             reward = -1.0
@@ -154,7 +140,7 @@ def get_wandb_id(cfg):
 
 
 @hydra.main(
-    config_path="config", config_name="MCQA-RL_2.yaml", version_base="1.1"
+    config_path="config", config_name="MCQA-base-text_RL.yaml", version_base="1.1"
 )
 def train(cfg: DictConfig):
     """Main training function"""
@@ -228,7 +214,7 @@ def train(cfg: DictConfig):
     )
     tokenizer.chat_template = None
     tokenizer.padding_side = "left"
-    # tokenizer.max_length = 2048
+    tokenizer.max_length = 2048
 
     # Load datasets
     raw_train_dataset = concatenate_datasets(
@@ -291,14 +277,14 @@ def train(cfg: DictConfig):
         max_grad_norm=cfg.training.max_grad_norm,
         warmup_ratio=cfg.training.warmup_ratio,
         eval_strategy="steps",
-        eval_steps=1500,
+        eval_steps=3000,
         logging_steps=10,
         report_to=cfg.training.report_to,
         save_strategy="steps",
         save_total_limit=3,
         bf16=torch.cuda.is_bf16_supported(),
         fp16=not torch.cuda.is_bf16_supported(),
-        lr_scheduler_type="cosine",
+        lr_scheduler_type="linear",
         seed=cfg.environment.seed,
         push_to_hub=cfg.training.push_to_hub,
         hub_model_id=cfg.model.hub_model_id,

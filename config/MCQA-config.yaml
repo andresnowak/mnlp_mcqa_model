@@ -10,54 +10,54 @@ model:
   hub_model_id: andresnowak/Qwen3-0.6B-MNLP_M2_mcqa_model
 
 dataset_train:
-  - name: andresnowak/MNLP_MCQA_dataset_2
+  - name: andresnowak/MNLP_M2_mcqa_dataset
     config: train
     subset_name: math_qa
-  - name: andresnowak/MNLP_MCQA_dataset_2
+  - name: andresnowak/MNLP_M2_mcqa_dataset
     subset_name: ScienceQA
     config: train
-  - name: andresnowak/MNLP_MCQA_dataset_2
+  - name: andresnowak/MNLP_M2_mcqa_dataset
     subset_name: mmlu-auxiliary-train-auto-labelled
     config: train
-  - name: andresnowak/MNLP_MCQA_dataset_2
+  - name: andresnowak/MNLP_M2_mcqa_dataset
     subset_name: ai2_arc_challenge
     config: train
-  - name: andresnowak/MNLP_MCQA_dataset_2
+  - name: andresnowak/MNLP_M2_mcqa_dataset
     subset_name: ai2_arc_easy
     config: train
-  - name: andresnowak/MNLP_MCQA_dataset_2
+  - name: andresnowak/MNLP_M2_mcqa_dataset
     subset_name: medmcqa
     config: train
-  - name: andresnowak/MNLP_MCQA_dataset_2
+  - name: andresnowak/MNLP_M2_mcqa_dataset
     subset_name: openbookqa
     config: train
-  - name: andresnowak/MNLP_MCQA_dataset_2
+  - name: andresnowak/MNLP_M2_mcqa_dataset
     subset_name: sciq
     config: train
 
 dataset_validation:
-  - name: andresnowak/MNLP_MCQA_dataset_2
+  - name: andresnowak/MNLP_M2_mcqa_dataset
     config: validation
     subset_name: math_qa
-  - name: andresnowak/MNLP_MCQA_dataset_2
+  - name: andresnowak/MNLP_M2_mcqa_dataset
     subset_name: ScienceQA
     config: validation
-  - name: andresnowak/MNLP_MCQA_dataset_2
+  - name: andresnowak/MNLP_M2_mcqa_dataset
     subset_name: mmlu
     config: validation
-  - name: andresnowak/MNLP_MCQA_dataset_2
+  - name: andresnowak/MNLP_M2_mcqa_dataset
     subset_name: ai2_arc_challenge
     config: validation
-  - name: andresnowak/MNLP_MCQA_dataset_2
+  - name: andresnowak/MNLP_M2_mcqa_dataset
     subset_name: ai2_arc_easy
     config: validation
-  - name: andresnowak/MNLP_MCQA_dataset_2
+  - name: andresnowak/MNLP_M2_mcqa_dataset
     subset_name: medmcqa
     config: validation
-  - name: andresnowak/MNLP_MCQA_dataset_2
+  - name: andresnowak/MNLP_M2_mcqa_dataset
     subset_name: openbookqa
     config: validation
-  - name: andresnowak/MNLP_MCQA_dataset_2
+  - name: andresnowak/MNLP_M2_mcqa_dataset
     subset_name: sciq
     config: validation
 

@@ -1,177 +1,163 @@
-torch 2.5.1 cuda 12.1 is needed
+## Project Structure Overview
 
-**It seems we are not allowed to use chat templates so it is not possible to do instruction finetuning**
+### `dataset_and_model_inspection/`
 
-## Ideas
-- Can we still train with the instruction datasets? or does it make sense to do it?# mnlp_mcqa_model
-  - The answer is yes
-- How much do we clip the grad norms, how much do we clip the grad norm of the linear layers
-- how much gradient batch accumulation do we use
-- should we use weight decay?
-  - I think no
-- What dataset to use for evaluation during training
-- Try and use accelerate
+This directory contains notebooks for:
 
+- Exploring the datasets used for MCQA (Multiple-Choice Question Answering)
+- Inspecting the base models
+- Analyzing the logit outputs of likelihood-based MCQA models
 
-## Notes
-- When using a dataset with a "messages" field (like the example above), the SFTTrainer automatically applies the model's chat template, which it retrieves from the hub. This means you don't need any additional configuration to handle chat-style conversations - the trainer will format the messages according to the model's expected template format.
-  - **So what we have to do for formatting is do {Question} \n {Answer} (the answer is yes it seems), and we should use packing when finetuning**
-  - We have to shuffle the training set before each epoch
-- Use Flash attention and accelerate
-- Maybe use QLora
-- Does SFTT and in general when doing finetuning, is the loss done on Question and Answer? or just the answer?
-  - For the training also doing the masking of the question seems to depend on the finetuning task, for the instruction finetuning it seems we don't have to mask the question
-    - Still not sure if we have to mask the question (or instruction) or not during training?
-- Use packing maybe, because it helps putting multiple examples in a single prompt up to max seq length (packing adds eos sentence tokens between examples)
-- We should use an effective batch size of 128
-  - Doing small batch sizes makes the gradient noisy, and this can make the model take a "zig-zag" path to the optimal solution
+Use this for diagnostic and interpretability tasks to understand data-model interactions.
 
-## Training efficiency
-- Use accelerate
-  - ```accelerate launch --mixed_precision $DTYPE --num_machines $NUM_NODES --num_processes $NUM_GPUS --dynamo_backend 'no' finetune.py```
-- We are using bf16 so i think here the mixed precision is not a problem
-- Use Flash attention 2
-- Always add this line export `export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7` so we can see all the gpus for multi gpu training and not just one (in the end probably this isn't possible becasuse the gpus are assigned a memory size by default for each student I think and i get Out of Memory errors because of this)
+---
 
-## Heuristics of how things work
-- First warmup ratio, at the beggining it is possible teh gradient norm will be zero becasue it will be scaled by a very small learning rate, but the computation are not wasted as Optimizers (e.g., Adam) still accumulate gradient statistics (mean/variance) during warmup, which are critical for later steps. But we won't be training on that part of the dataset, we are just computing the momentums for the optimizer.
-- With smaller models you can use bigger learning rates, as we have fewer parameters the gradients have less averaging across parameters, so they are deterinistic
-- For fine-tuning (SFT), the warmup ratio can depend on how different the downstream task is from the pretraining task.
-  - If the task is very different, a higher warmup ratio might help the model adapt gradually.
-  - If the task is similar, less warmup may be needed.
+### `generate_data/`
 
+Scripts for generating MCQA datasets and instruction fine-tuning data.
 
-## Instruction finetuning datasets
-- Probably the AYA dataset is not a good one as it is a very big multilingual dataset
-- The FlanV2 dataset is a very high quality instruction finetuning dataset, so in reality with this dataset we should need to do to much the idea fof applying random templates
-- The good instruciton finetuning datasets are:
-  - FlanV2
-  - Scirif data
-  - the tulu if persona data (ifData)
-  - noRobots
-  - maybe a little bit of Oasst1, but it seems this dataset is biased to short user instructions and larger assistant answer than the responses
+> ⚠️ **Hugging Face login is required**. Run:
+>
+> ```bash
+> huggingface-cli login
+> ```
 
+#### Key Files
 
-## Extra
-- Talks about the problem of normalizing gradient accumulation https://unsloth.ai/blog/gradient
+- `create_dataset_IF_Mixture.py`  
+  Creates the instruction-finetuned dataset.  
+  Use the `--hub-dataset-name` argument to specify your Hugging Face repo ID.
 
+- `create_m3_mcqa_dataset.py`  
+  Builds the M3-style MCQA dataset.  
+  Also supports `--hub-dataset-name` for pushing to the Hub.
 
-## Important
-- It seems it is necessary to use the datacollator as it adds the special tokens correctly to the tokenization of the inputs, (I think the trainer at least does the label shifting)
-  - It seems the way i do the tokenization is wrong compared to the one that sfttrainer does or unsloth does (and the sft one is also faster when training i don't know what is the difference). but pretty sure what im doing maybe is wrong (or maybe the sft trainer doesn't already add manually teh label shifting?), but the datacollator is not necessary it is jsut it seems the way im tokenizing is wrong as the loss that i get with my manual tokenization is bigger (2 instead of 1) and the grad norm at the beggining is 150 compared to sft with 2 or 4 (so pretty sure something is wrong as a big grad norm means the task is very different to what the model was trained for)
-- **It seems personas math contains a "lot" of examples that contain I hope it is correct at the end**
+- `create_dataset_mcqa.py`  
+  Another variant for MCQA dataset creation.  
+  Also supports `--hub-dataset-name` for pushing to the Hub.  
+  This script accepts a `--config` argument to specify a dataset configuration YAML file:
+  - `MCQA_datasets_m2.yaml`
+  - `MCQA_datasets_m3.yaml`  
+  Both files are located in the `config/` directory within `generate_data/`.
 
-## Understanding SFT
-- Do we train only on the completion or in the whole input
-	- Our TA said that there shouldn't be any difference, but that aa friend of his working on a company says that if the output is always of longer length than the prompt the model can have a big loss (maybe because the model losses track of the prompt)
-	- But i feel researching supposedly it should be only on the completion, but I also don't know what SFT trainer does by default
-		- It seems SFT only applies completion loss only when using prompt and answer datasets but with the chat datsets it seems it doesn't
+- `generate_mcqa_10_choices.py`  
+  Generates MCQA-style questions with 10 answer choices.  
+  Requires installation of a local `.whl` package:
+  ```bash
+  pip install artifacts/gpt_wrapper-0.2.0-py3-none-any.whl
+  ```
+- `create_mcqa_from_generated_10_options.py`
+  Converts generated data into a valid MCQA dataset.
+    - A pre-existing JSON file generated by generate_mcqa_10_choices.py
+    - A Hugging Face repo ID
+
+    ```bash
+    python create_mcqa_from_generated_10_options.py --repo-id <your_repo_id>
+    ```
+
+## Training
+
+**All of this code used hydra**
+
+To train the MCQA model using the 10-option format, you have two options:
+
+---
+
+### Option 1: Login to Weights & Biases and Hugging Face
 
 
-## Understanding the evaluation:
+> ⚠️ **Hugging Face login is required**. Run:
+>
+> ```bash
+> huggingface-cli login
+> wandb login
+> ```
 
-1. Token-Level Processing (Simplified)
-Your prompt is tokenized into something like this (actual tokens depend on the tokenizer):
+You must also provide a Hugging Face Hub repo ID when training:
 
-["Question:", " What", " is", " 2", "+", "2", "?", " Choices:", "\nA", ")", " 3", "\nB", ")", " 4", ...]
-When evaluating choice A (A) 3):
+```bash
+python finetune_mcqa_10_options_m3.py model.hub_model_id=path/to/repo
+```
 
-The model sees the full prompt up to \nA.
+### Option 2: Run Offline (No Login Required)
 
-It predicts the next token (which should be ")").
+You can disable both Hugging Face and Weights & Biases integration using:
 
-Then predicts the token after that (which should be " 3").
+```bash
+WANDB_MODE=disabled python finetune_mcqa_10_options_m3.py training.push_to_hub=false
+```
 
-The key: It computes log probabilities for each required token in the choice sequence.
+This will:
+- Prevent pushing models to the Hugging Face Hub
+- Disable wandb logging
 
-2. Scoring Choice A (A) 3)
-Here’s how the model "scores" this choice internally:
+---
 
-Prompt Context:
 
-"Question: What is 2+2?\nChoices:\nA"
-Model generates logits for the next token (should be ")").
+## Training Scripts
 
-Logprob of ")" = -0.2 (example).
+This repository contains multiple training scripts for different model configurations and training approaches:
 
-Next Token:
+### Base Model Training
 
-"Question: ... Choices:\nA)"
-Now predicts the next token after ")" (should be " 3").
+**`finetune_mcqa_10_options_m3.py`** - Trains the M3 model using the generated 10-option MCQA dataset.
+- Starts from base model
+- Uses maximum likelihood training with any number of choices
+- Incorporates synthetic 10-choice MMLU auxiliary training dataset
+- Uses random templates for robustness to different prompts
+- Model uploaded to M3 MNLP
 
-Logprob of " 3" = -1.0.
+**Example (offline mode):**
+```bash
+python finetune_mcqa_10_options_m3.py training.push_to_hub=false
+```
 
-Total Logprob for Choice A:
+### MCQA likelihood models
 
-logprob_A = logprob(")") + logprob(" 3") = -0.2 + (-1.0) = -1.2
-3. Comparing All Choices
-Repeat this for all options:
+**`finetune_mcqa_10_options_m3.py`** - Model uploaded to M3 MNLP.
+- Starts from base model
+- Uses maximum likelihood training with any number of choices
+- Incorporates synthetic 10-choice MMLU auxiliary training dataset
+- Uses random templates for robustness to different prompts
 
-Choice	Tokens to Predict	Example Logprobs	Total Logprob
-A) 3	")", " 3"	-0.2 + -1.0	-1.2
-B) 4	")", " 4"	-0.2 + -0.1	-0.3
-C) 5	")", " 5"	-0.2 + -1.9	-2.1
-D) 6	")", " 6"	-0.2 + -1.6	-1.8
-Winner: B) 4 (highest total logprob = -0.3).
+**`finetune_mcqa.py`** - MCQA model with 4-option likelihood training starting from base model.
+- Model uploaded to M2 MNLP
 
-4. Why This Works
-No Generation: The model never outputs ") 3"—it just scores how likely those tokens are to follow the prompt.
+**`finetune_mcqa_10_options.py`** - Similar to `finetune_mcqa_10_options_m3.py` but without random templates.
 
-Token-by-Token: Logprobs are additive across the sequence of tokens in each choice.
+**`finetune_IF_mcqa.py`** - MCQA model with 4-option likelihood starting from the instruction fine-tuned language modeling model.
 
-Answer Selection: The choice with the highest sum of logprobs wins.
+### Instruction Fine-tuned Models
 
-5. Key Clarifications
-Q: Does the model "see" other choices while scoring one?
-No. Each choice (A) 3, B) 4, etc.) is scored independently as a continuation of the same base prompt.
+**`finetune_lm.py`** - Instruction fine-tuned model using language modeling loss.
 
-Q: What if the choice is longer (e.g., "A) The number four")?
-The model would score all tokens in the continuation:
-")", " The", " number", " four" → sum their logprobs.
+**`finetune_cl.py`** - Instruction fine-tuned model using completion-only loss.
 
-Normalization (_norm_nospace) divides by token count to avoid length bias.
+### Sequence-to-Sequence Models
 
-Q: How is this different from generation?
-Generation: Model freely produces tokens (e.g., "The answer is B)").
+**`finetune_base_mcqa_text.py`** - Seq2seq model trained to output `[letter]. [text of the answer]`.
+- Starts from base model
+- Uses random templates
 
-Logprob Scoring: Model silently evaluates how likely predefined tokens (like " 4") are to appear next.
+**`finetune_IF_cl_mcqa_text.py`** - Seq2seq model trained to output `[letter]. [text of the answer]`.
+- Starts from instruction fine-tuned completion-only loss model
+- Uses random templates
 
-6. Practical Implications
-Efficiency: Faster than text generation (no decoding loop).
+### Reinforcement Learning Models
 
-Accuracy: More reliable than parsing generated text (avoids formatting issues).
+**`finetune_base_text_mcqa_rl.py`** - Model trained with RLVR using GRPO.
+- Starts from `finetune_base_mcqa_text.py`
+- Reward: +1 or -1 when `[letter.]` is found
 
-Reproducibility: Deterministic if the model and prompt are fixed.
+**`finetune_IF_cl_mcqa_text_rl.py`** - Model trained with RLVR using GRPO.
+- Starts from `finetune_IF_cl_mcqa_text.py`
+- Reward structure:
+  - +2 when `[letter]. [text of the answer]` is found
+  - +1 when `[letter.]` is found
+  - -1 when neither is found
 
-Example Code (Pseudocode)
-python
-base_prompt = "Question: What is 2+2?\nChoices:\n"
-choices = ["A) 3", "B) 4", "C) 5", "D) 6"]
+## Other Libraries
 
-scores = []
-for choice in choices:
-    input_text = base_prompt + choice
-    input_ids = tokenizer.encode(input_text, return_tensors="pt")
-    
-    # Get logprobs for each token in the choice
-    with torch.no_grad():
-        outputs = model(input_ids)
-        logits = outputs.logits
-    
-    # Calculate logprob for each token in the choice (simplified)
-    choice_logprob = 0
-    for i in range(len(input_ids[0]) - 1):
-        token_logprob = logits[0, i, input_ids[0, i+1]].item()  # Logprob of next token
-        choice_logprob += token_logprob
-    
-    scores.append(choice_logprob)
-
-best_choice = choices[torch.argmax(torch.tensor(scores))]  # "B) 4"
-Summary
-The model scores each choice token-by-token as a continuation of the prompt.
-
-It sums logprobs for all tokens in a choice (e.g., ")" + " 4" for B) 4).
-
-The highest sum wins—no text generation needed.
-
-This is why generation_size=-1 is optimal for multiple-choice QA! Let me know if you'd like to dive deeper into tokenization or normalization. 🚀
+**Evaluation Framework**: [lighteval-epfl-mnlp](https://github.com/andresnowak/lighteval-epfl-mnlp/tree/main_2)
+- This forked repository was used for evaluating MCQA and Chain-of-Thought (CoT) models
+  

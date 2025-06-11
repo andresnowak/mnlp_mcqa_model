@@ -220,6 +220,7 @@ def join_datasets(config):
             dataset_info["name"],
             dataset_info["config"],
             split=split,
+            trust_remote_code=True,
         )
 
         data = []
@@ -263,7 +264,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config",
         type=str,
-        default="config/MCQA_datasets_join_2.yaml",
+        default="config/MCQA_datasets_m3.yaml",
         help="Path to the configuration YAML file.",
     )
     parser.add_argument(

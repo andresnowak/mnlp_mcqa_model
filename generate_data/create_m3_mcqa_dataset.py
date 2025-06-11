@@ -50,7 +50,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config",
         type=str,
-        default="config/mcqa_if_join_datasets.yaml",
+        default="config/MCQA_join_with_IF_datasets.yaml",
         help="Path to the configuration YAML file.",
     )
     parser.add_argument(

@@ -66,7 +66,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config",
         type=str,
-        default="config/IF_datasets_join_2_no_nlp4ed.yaml",
+        default="config/IF_datasets_mixture.yaml",
         help="Path to the configuration YAML file.",
     )
     parser.add_argument(

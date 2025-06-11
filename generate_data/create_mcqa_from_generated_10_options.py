@@ -4,6 +4,12 @@ import difflib
 from difflib import SequenceMatcher
 from datasets import Dataset
 import numpy as np
+import argparse
+
+# ===== NEW: Add CLI argument setup =====
+parser = argparse.ArgumentParser()
+parser.add_argument("--repo-id", type=str, default="andresnowak/mmlu-auxiliary-train-10-choices", help="HF repo ID")
+args = parser.parse_args()
 
 df = pd.read_json("generated_mmlu_choices.jsonl", lines=True)
 print(df.head())
@@ -149,5 +155,4 @@ df_matched.rename(columns={"correct_answer": "answer"}, inplace=True)
 # Step 5: Convert to Hugging Face Dataset
 hf_dataset = Dataset.from_pandas(df_matched, preserve_index=False)
 
-repo_id = "andresnowak/mmlu-auxiliary-train-10-choices"
-hf_dataset.push_to_hub(repo_id, config_name="default", split="train")
+hf_dataset.push_to_hub(args.repo_id, config_name="default", split="train")

@@ -165,6 +165,8 @@ def train(cfg: DictConfig):
     tokenizer.padding_side = "left"  # Critical for Flash Attention compatibility (It seems Qwen3 Flash attention needs this <pad> value, instead of value <pad>)
     # tokenizer.max_length = 2048
 
+    print(cfg.training.push_to_hub)
+
     # Training setup
     training_args = SFTConfig(
         output_dir=cfg.training.output_dir,
@@ -186,7 +188,7 @@ def train(cfg: DictConfig):
         fp16=not torch.cuda.is_bf16_supported(),
         lr_scheduler_type="linear",
         seed=cfg.environment.seed,
-        push_to_hub=True,
+        push_to_hub=cfg.training.push_to_hub,
         hub_model_id=cfg.model.hub_model_id,
     )
 

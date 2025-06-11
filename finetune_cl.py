@@ -6,7 +6,7 @@ import wandb
 from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM,
-    DataCollatorForLanguageModeling,
+    # DataCollatorForLanguageModeling,
 )
 from trl import SFTTrainer, SFTConfig
 import torch
@@ -24,6 +24,9 @@ from jinja2 import Environment, FileSystemLoader
 
 from src.trainers import IFSFTTrainer
 
+import torch
+torch._inductor.config.triton.multi_kernel = 1  # Fix the type error
+
 device = (
     "cuda"
     if torch.cuda.is_available()
@@ -35,11 +38,12 @@ print(f"Available gpus {torch.cuda.device_count()}")
 logger = logging.getLogger(__name__)
 
 # Templates
-template_dir = f"{os.getcwd()}/templates/IF" # seems jinja wants the absolute path
-template_files = [f for f in os.listdir(template_dir) if f.endswith('.jinja')]
+template_dir = f"{os.getcwd()}/templates/IF"  # seems jinja wants the absolute path
+template_files = [f for f in os.listdir(template_dir) if f.endswith(".jinja")]
 jinja_env = Environment(loader=FileSystemLoader(template_dir))
 
 # ------------------------
+
 
 def load_mmlu_datasets(name="cais/mmlu", split="test", subjects=["abstract_algebra"]):
     """
@@ -65,7 +69,7 @@ def format_chat_messages(messages, tokenizer, use_template=True):
     instruction = ""
     answer = ""
 
-    assert(len(messages) == 2)
+    assert len(messages) == 2
     for message in messages:
         role = message.get("role", "").lower()
         content = message.get("content", "")
@@ -81,13 +85,13 @@ def format_chat_messages(messages, tokenizer, use_template=True):
     template = jinja_env.get_template(chosen_template)
 
     if use_template:
-        formatted_text = template.render(instruction=instruction, answer=answer)
+        formatted_text = template.render(instruction=instruction, answer="")
     else:
-        formatted_text = f"{instruction}\n\n{answer}"
+        formatted_text = f"{instruction}\n\n"
 
-    formatted_text += tokenizer.eos_token # add eos_token so it doesn't go on forever
+    answer += tokenizer.eos_token
 
-    return formatted_text
+    return formatted_text, answer
 
 
 def tokenize_chat_function(examples, tokenizer):
@@ -95,56 +99,26 @@ def tokenize_chat_function(examples, tokenizer):
     Tokenize chat-based examples where each example has a 'messages' field
     containing a list of message dictionaries.
     """
-    texts = [
-        format_chat_messages(messages, tokenizer) for messages in examples["messages"]
-    ]
+    input_ids_list = []
+    completion_mask_list = []
+    lengths = []
+    for messages in examples["messages"]:
+        prompt, completion = format_chat_messages(messages, tokenizer)
 
-    return {"text": texts}
+        # Tokenize separately to know the lengths
+        prompt_tokens = tokenizer.encode(prompt, add_special_tokens=False)
+        completion_tokens = tokenizer.encode(completion, add_special_tokens=False)
 
-    # text_tokenized = tokenizer(
-    #     texts,
-    #     max_length=2048,
-    #     truncation=True,
-    #     padding="longest",
-    #     return_tensors="pt",
-    #     add_special_tokens=True, 
-    # )
-    # NOTE: did this change so we always have eos token at the end
-    # eos_token_id = tokenizer.eos_token_id
-    # pad_token_id = tokenizer.pad_token_id
-    
-    # # Skip adjustment if no EOS token
-    # if eos_token_id is None:
-    #     return text_tokenized
-    
-    # # Calculate sequence lengths (number of non-pad tokens)
-    # input_ids = text_tokenized["input_ids"]
-    # non_pad_mask = input_ids != pad_token_id
-    # seq_lengths = non_pad_mask.sum(dim=1)  # Vectorized computation
-    
-    # # Create indices for last tokens [batch_size, 2]
-    # batch_indices = torch.arange(input_ids.size(0))
-    # last_token_indices = seq_lengths - 1  # Position of last non-pad token
-    
-    # # Only modify sequences with at least 1 token
-    # valid_seqs = seq_lengths > 0
-    # batch_indices = batch_indices[valid_seqs]
-    # last_token_indices = last_token_indices[valid_seqs]
-    
-    # # Vectorized assignment
-    # input_ids[batch_indices, last_token_indices] = eos_token_id
+        # Combine tokens
+        input_ids = prompt_tokens + completion_tokens
 
-    # input_ids = text_tokenized["input_ids"]  # (batch_size, seq_len)
-    # eos_token_id = tokenizer.eos_token_id
-    # last_token = input_ids[:, -1]  # last token in each sequence
-    
-    # # Only replace if it's not already eos
-    # needs_replace = last_token != eos_token_id
-    # input_ids[needs_replace, -1] = eos_token_id
-    
-    # text_tokenized["input_ids"] = input_ids
-        
-    # return text_tokenized
+        completion_mask = [0] * len(prompt_tokens) + [1] * len(completion_tokens)
+
+        input_ids_list.append(input_ids)
+        completion_mask_list.append(completion_mask)
+        lengths.append(len(input_ids))
+
+    return {"input_ids": input_ids_list, "completion_mask": completion_mask_list, "length": lengths}
 
 
 def get_wandb_id(cfg):
@@ -161,7 +135,7 @@ def get_wandb_id(cfg):
     return wandb_id, resume_mode
 
 
-@hydra.main(config_path="config", config_name="IF-config_2.yml", version_base="1.1")
+@hydra.main(config_path="config", config_name="IF-config_cl.yml", version_base="1.1")
 def train(cfg: DictConfig):
     random.seed(cfg.environment.seed)
 
@@ -220,12 +194,12 @@ def train(cfg: DictConfig):
         # attn_implementation="flash_attention_2",
         load_in_4bit=False,
         load_in_8bit=False,
-        full_finetuning=True,  # this is necessary to activate gradiendts and do upcast in some layers
+        full_finetuning=True, # this is necessary to activate gradiendts and do upcast in some layers
     )
-    # Just because full_finetuning has problems with different versions of torch and unsloth and triton
-    # model = model.to(device) # the model is already passed to the deviceAdd commentMore actions
+    # model = model.to(device) # the model is already passed to the device
     # It seems by default the model with unsloth doesn't have require grad = true, only when using lora it seems
-
+    # for param in model.parameters():
+    #     param.requires_grad = True
 
     # Tokenizer setup
     # tokenizer = AutoTokenizer.from_pretrained(cfg.model.name)
@@ -233,11 +207,10 @@ def train(cfg: DictConfig):
         tokenizer.eos_token if tokenizer.pad_token is None else tokenizer.pad_token
     )
     tokenizer.chat_template = None
-    tokenizer.padding_side = "left"  # Critical for Flash Attention compatibility (It seems Qwen3 Flash attention needs this <pad> value, instead of value <pad>)
-    tokenizer.max_length = 2048
+    # tokenizer.padding_side = "left"  # Critical for Flash Attention compatibility (It seems Qwen3 Flash attention needs this <pad> value, instead of value <pad>)
+    # tokenizer.max_length = 2048
 
-
-    # ---- Load training dataset ----- 
+    # ---- Load training dataset -----
     dataset_list = []
     for dataset in cfg.dataset:
         # Load the full dataset first
@@ -256,27 +229,25 @@ def train(cfg: DictConfig):
         )
         dataset_list.append(sampled_dataset)
 
-    # filter examples, this will have more than 2048 tokens
-    def filter_long_examples(example):
-        # Format the messages to calculate total length
-        formatted_text = format_chat_messages(example["messages"], tokenizer, cfg.environment.use_template)
-        return len(formatted_text) <= 15_000
-
-    raw_train_datasets = concatenate_datasets(dataset_list).shuffle(
-        seed=cfg.environment.seed
-    ).filter(filter_long_examples, num_proc=10)
+    raw_train_datasets = (
+        concatenate_datasets(dataset_list)
+        .shuffle(seed=cfg.environment.seed)
+    )
 
     # Tokenization with instruction formatting
     tokenized_dataset = raw_train_datasets.map(
         lambda x: tokenize_chat_function(x, tokenizer),
         batched=True,
         num_proc=30,
-    )
+        remove_columns=raw_train_datasets.column_names,  # Remove original columns
+    ).filter(lambda x: x["length"] <= 2048, num_proc=40)
     split = tokenized_dataset.train_test_split(test_size=0.05)
 
     # load mmlu
     mmlu_datasets = load_mmlu_datasets(
-        cfg.dataset_evaluation[0].name, cfg.dataset_evaluation[0].config, cfg.dataset_evaluation[0].subjects
+        cfg.dataset_evaluation[0].name,
+        cfg.dataset_evaluation[0].config,
+        cfg.dataset_evaluation[0].subjects,
     )
 
     # ---- log -----
@@ -297,6 +268,7 @@ def train(cfg: DictConfig):
         f"  Gradient Accumulation steps = {cfg.training.gradient_accumulation_steps}"
     )
 
+
     # Training setup
     training_args = SFTConfig(
         output_dir=cfg.training.output_dir,
@@ -316,10 +288,12 @@ def train(cfg: DictConfig):
         save_total_limit=3,
         bf16=torch.cuda.is_bf16_supported(),
         fp16=not torch.cuda.is_bf16_supported(),
-        lr_scheduler_type="linear",
+        lr_scheduler_type=cfg.training.lr_scheduler,
         seed=cfg.environment.seed,
         push_to_hub=cfg.training.push_to_hub,
         hub_model_id=cfg.model.hub_model_id,
+        # max_seq_length=2048,
+        completion_only_loss=cfg.training.completion_only_loss,
     )
 
     trainer = IFSFTTrainer(
@@ -328,21 +302,23 @@ def train(cfg: DictConfig):
         args=training_args,
         train_dataset=split["train"],
         eval_dataset=split["test"],
-        dataset_text_field="text",
+        # dataset_text_field="text",
         mmlu_datasets=mmlu_datasets,
         eval_dataset_name="training_validation_split",  # Name for your training data validation split
-        # data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
-        max_seq_length=2048,
+        # data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False, completion_only_loss=True),
     )
 
     # trainer.train(resume_from_checkpoint=last_checkpoint)
     unsloth_train(
         trainer, resume_from_checkpoint=last_checkpoint
     )  # use unsloth to have the fix of the gradient accumulation
-    wandb.finish()
+
+    trainer.create_model_card(cfg.wandb.name)
 
     # Push final model
     trainer.push_to_hub()
+
+    wandb.finish()
 
 
 if __name__ == "__main__":

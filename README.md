@@ -165,3 +165,25 @@ python finetune_mcqa_10_options_m3.py training.push_to_hub=false
 **Evaluation Framework**: [lighteval-epfl-mnlp](https://github.com/andresnowak/lighteval-epfl-mnlp/tree/main_2)
 - This forked repository was used for evaluating MCQA and Chain-of-Thought (CoT) models
   
+
+## Links
+
+The links of the datasets are 
+
+- https://huggingface.co/datasets/andresnowak/MNLP_M3_mcqa_dataset
+- https://huggingface.co/datasets/andresnowak/MNLP_M2_mcqa_dataset
+- https://huggingface.co/datasets/andresnowak/MNLP_MCQA_dataset
+- https://huggingface.co/datasets/andresnowak/MNLP_MCQA_dataset_2
+- https://huggingface.co/datasets/andresnowak/mmlu-auxiliary-train-10-choices
+
+
+The links of models are 
+- https://huggingface.co/andresnowak/Qwen3-0.6B-instruction-finetuned
+- https://huggingface.co/andresnowak/Qwen3-0.6B-instruction-finetuned_v2
+- https://huggingface.co/andresnowak/MNLP_M2_mcqa_model
+- https://huggingface.co/andresnowak/Qwen3-0.6B-MNLP_mcqa_model_text
+- https://huggingface.co/andresnowak/Qwen3-0.6B-instruction-finetuned-MCQA
+- https://huggingface.co/andresnowak/Qwen3-0.6B-MNLP_mcqa_rl
+- https://huggingface.co/andresnowak/Qwen3-0.6B-MNLP_mcqa_model_text_2
+- https://huggingface.co/andresnowak/Qwen3-0.6B-CoT
+- https://huggingface.co/andresnowak/Qwen3-0.6B-MNLP_IF_v2_text_mcqa_rl

@@ -1,3 +1,7 @@
+## Link to paper
+
+[Paper](Are_You_Smarter_Than_a_Compact_AI_.pdf)
+
 ## Project Structure Overview
 
 ### `dataset_and_model_inspection/`
